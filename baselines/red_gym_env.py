@@ -1,53 +1,29 @@
-
-import sys
-import uuid 
-import os
-from math import floor, sqrt
 import json
+import sys
+import uuid
+from math import floor
 from pathlib import Path
 
-import numpy as np
-from einops import rearrange
-import matplotlib.pyplot as plt
-from skimage.transform import resize
-from pyboy import PyBoy
 import hnswlib
+import matplotlib.pyplot as plt
 import mediapy as media
+import numpy as np
 import pandas as pd
+from einops import rearrange
+from pyboy import PyBoy
+from skimage.transform import resize
 
 from gymnasium import Env, spaces
-from pyboy.utils import WindowEvent
-
 from PokeRedReader import PokeRedReader
 from PokemonRedRewarder import PokemonRedRewarder
+from pyboy.utils import WindowEvent
 
+DEFAULTS_PATH = './default_config.json'
 
-
+with open(DEFAULTS_PATH, 'r') as f:
+    DEFAULTS = json.load(f)
 
 class RedGymEnv(Env):
-    
-    DEFAULTS = {
-        "s_path": None,
-        "instance_id": None,
-        "debug": False,
-        "gb_path": "../PokemonRed.gb",
-        "save_final_state": True,
-        "print_rewards": True,
-        "vec_dim": 4320,
-        "headless": False,
-        "num_elements": 20000,
-        "init_state": "../has_pokedex_nballs.state",
-        "act_freq": 24,
-        "max_steps": 16384,
-        "early_stopping": False,
-        "save_video": False,
-        "fast_video": True,
-        "downsample_factor": 2,
-        "frame_stacks": 3,
-        "similar_frame_dist": 2000000.0,
-        "reset_count": 0,
-        "all_runs": []
-    }
 
     VALID_ACTIONS = [
         WindowEvent.PRESS_ARROW_DOWN,
@@ -72,7 +48,7 @@ class RedGymEnv(Env):
 
     def __init__(
         self, config=None):
-        config = {**self.DEFAULTS, **(config or {})}  # Merge defaults with provided config
+        config = {**DEFAULTS, **(config or {})}  # Merge defaults with provided config
 
         for key, value in config.items():
             setattr(self, key, value)
