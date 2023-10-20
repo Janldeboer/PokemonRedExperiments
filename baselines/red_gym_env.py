@@ -16,6 +16,7 @@ from skimage.transform import resize
 from gymnasium import Env, spaces
 from PokeRedReader import PokeRedReader
 from PokemonRedRewarder import PokemonRedRewarder
+from KnnHandler import KnnHandler
 from pyboy.utils import WindowEvent
 
 DEFAULTS_PATH = './default_config.json'
@@ -88,6 +89,7 @@ class RedGymEnv(Env):
 
         self.poke_reader = PokeRedReader(pyboy = self.pyboy)
         self.poke_rewarder = PokemonRedRewarder(poke_reader = self.poke_reader, save_screenshot = self.save_screenshot)
+        self.knn_handler = KnnHandler(poke_reader= self.poke_reader, instance_id=self.instance_id, session_path=self.session_path)
         self.screen = self.pyboy.botsupport_manager().screen()
 
         self.pyboy.set_emulation_speed(0 if config['headless'] else 6)
@@ -100,7 +102,7 @@ class RedGymEnv(Env):
         with open(self.init_state, "rb") as f:
             self.pyboy.load_state(f)
 
-        self.init_knn()
+        self.knn_handler = KnnHandler(poke_reader= self.poke_reader, instance_id=self.instance_id, session_path=self.session_path)
 
         self.recent_memory = np.zeros((self.output_shape[1]*self.memory_height, 3), dtype=np.uint8)
         
@@ -122,21 +124,13 @@ class RedGymEnv(Env):
             self.model_frame_writer.__enter__()
        
         self.levels_satisfied = False
-        self.base_explore = 0
         self.step_count = 0
         self.progress_reward = self.poke_rewarder.get_game_state_reward()
-        self.progress_reward['explore'] = self.get_knn_reward()
+        self.progress_reward['explore'] = self.knn_handler.get_knn_reward()
         self.total_reward = sum([val for _, val in self.progress_reward.items()])
         self.reset_count += 1
         return self.render(), {}
     
-    def init_knn(self):
-        # Declaring index
-        self.knn_index = hnswlib.Index(space='l2', dim=self.vec_dim) # possible options are l2, cosine or ip
-        # Initing index - the maximum number of elements should be known beforehand
-        self.knn_index.init_index(
-            max_elements=self.num_elements, ef_construction=100, M=16)
-
     def render(self, reduce_res=True, add_memory=True, update_mem=True):
         game_pixels_render = self.screen.screen_ndarray() # (144, 160, 3)
         if reduce_res:
@@ -158,6 +152,41 @@ class RedGymEnv(Env):
                     axis=0)
         return game_pixels_render
     
+    def create_exploration_memory(self):
+        w = self.output_shape[1]
+        h = self.memory_height
+        
+        def make_reward_channel(r_val):
+            col_steps = self.col_steps
+            row = floor(r_val / (h * col_steps))
+            memory = np.zeros(shape=(h, w), dtype=np.uint8)
+            memory[:, :row] = 255
+            row_covered = row * h * col_steps
+            col = floor((r_val - row_covered) / col_steps)
+            memory[:col, row] = 255
+            col_covered = col * col_steps
+            last_pixel = floor(r_val - row_covered - col_covered) 
+            memory[col, row] = last_pixel * (255 // col_steps)
+            return memory
+        
+        level, hp, explore = self.group_rewards()
+        full_memory = np.stack((
+            make_reward_channel(level),
+            make_reward_channel(hp),
+            make_reward_channel(explore)
+        ), axis=-1)
+        
+        if self.poke_reader.get_badges() > 0:
+            full_memory[:, -1, :] = 255
+
+        return full_memory
+
+    def create_recent_memory(self):
+        return rearrange(
+            self.recent_memory, 
+            '(w h) c -> h w c', 
+            h=self.memory_height)
+        
     def step(self, action):
 
         self.run_action_on_emulator(action)
@@ -171,7 +200,7 @@ class RedGymEnv(Env):
         obs_flat = obs_memory[
             frame_start:frame_start+self.output_shape[0], ...].flatten().astype(np.float32)
 
-        self.update_frame_knn_index(obs_flat)
+        self.knn_handler.update_frame_knn_index(obs_flat)
             
         self.poke_rewarder.update_heal_reward()
 
@@ -211,6 +240,10 @@ class RedGymEnv(Env):
     def add_video_frame(self):
         self.full_frame_writer.add_image(self.render(reduce_res=False, update_mem=False))
         self.model_frame_writer.add_image(self.render(reduce_res=True, update_mem=False))
+        
+    def finish_video(self):
+        self.full_frame_writer.close()
+        self.model_frame_writer.close()
     
     def append_agent_stats(self, action):
         x_pos = self.poke_reader.read_m(0xD362)
@@ -222,36 +255,16 @@ class RedGymEnv(Env):
             'last_action': action,
             'pcount': self.poke_reader.read_m(0xD163), 'levels': levels, 'ptypes': self.poke_reader.read_party(),
             'hp': self.poke_reader.read_hp_fraction(),
-            'frames': self.knn_index.get_current_count(),
+            'frames': self.knn_handler.knn_index.get_current_count(),
             'deaths': self.poke_rewarder.died_count, 'badge': self.poke_reader.get_badges(),
             'event': self.progress_reward['event'], 'healr': self.poke_rewarder.total_healing_rew,
         })
-
-    def update_frame_knn_index(self, frame_vec):
-        
-        if self.poke_reader.get_levels_sum() >= 22 and not self.levels_satisfied:
-            self.levels_satisfied = True
-            self.base_explore = self.knn_index.get_current_count()
-            self.init_knn()
-
-        if self.knn_index.get_current_count() == 0:
-            # if index is empty add current frame
-            self.knn_index.add_items(
-                frame_vec, np.array([self.knn_index.get_current_count()])
-            )
-        else:
-            # check for nearest frame and add if current 
-            labels, distances = self.knn_index.knn_query(frame_vec, k = 1)
-            if distances[0] > self.sim_frame_dist:
-                self.knn_index.add_items(
-                    frame_vec, np.array([self.knn_index.get_current_count()])
-                )
-
+    
     def update_reward(self):
         # compute reward
         old_prog = self.group_rewards()
         self.progress_reward = self.poke_rewarder.get_game_state_reward()
-        self.progress_reward['explore'] = self.get_knn_reward()
+        self.progress_reward['explore'] = self.knn_handler.get_knn_reward()
         new_prog = self.group_rewards()
         new_total = sum([val for _, val in self.progress_reward.items()]) #sqrt(self.explore_reward * self.progress_reward)
         new_step = new_total - self.total_reward
@@ -273,50 +286,12 @@ class RedGymEnv(Env):
                # prog['levels'] + prog['party_xp'], 
                # prog['explore'])
 
-    def create_exploration_memory(self):
-        w = self.output_shape[1]
-        h = self.memory_height
-        
-        def make_reward_channel(r_val):
-            col_steps = self.col_steps
-            row = floor(r_val / (h * col_steps))
-            memory = np.zeros(shape=(h, w), dtype=np.uint8)
-            memory[:, :row] = 255
-            row_covered = row * h * col_steps
-            col = floor((r_val - row_covered) / col_steps)
-            memory[:col, row] = 255
-            col_covered = col * col_steps
-            last_pixel = floor(r_val - row_covered - col_covered) 
-            memory[col, row] = last_pixel * (255 // col_steps)
-            return memory
-        
-        level, hp, explore = self.group_rewards()
-        full_memory = np.stack((
-            make_reward_channel(level),
-            make_reward_channel(hp),
-            make_reward_channel(explore)
-        ), axis=-1)
-        
-        if self.poke_reader.get_badges() > 0:
-            full_memory[:, -1, :] = 255
-
-        return full_memory
-
-    def create_recent_memory(self):
-        return rearrange(
-            self.recent_memory, 
-            '(w h) c -> h w c', 
-            h=self.memory_height)
 
     def check_if_done(self):
         if self.early_stop:
-            done = False
-            if self.step_count > 128 and self.recent_memory.sum() < (255 * 1):
-                done = True
+            return self.step_count > 128 and self.recent_memory.sum() < (255 * 1)
         else:
-            done = self.step_count >= self.max_steps
-        #done = self.poke_reader.read_hp_fraction() == 0
-        return done
+            return self.step_count >= self.max_steps
 
     def save_and_print_info(self, done, obs_memory):
         if self.print_rewards:
@@ -331,7 +306,17 @@ class RedGymEnv(Env):
                 self.session_path / Path(f'curframe_{self.instance_id}.jpeg'), 
                 self.render(reduce_res=False))
 
-        if self.print_rewards and done:
+        if done:
+            self.clean_up(obs_memory)
+            
+    def clean_up(self, obs_memory):
+        self.all_runs.append(self.progress_reward)
+        with open(self.session_path / Path(f'all_runs_{self.instance_id}.json'), 'w') as f:
+            json.dump(self.all_runs, f)
+        pd.DataFrame(self.agent_stats).to_csv(
+            self.session_path / Path(f'afent_stats_{self.instance_id}.csv.gz'), compression='gzip', mode='a')
+                
+        if self.print_rewards:
             print('', flush=True)
             if self.save_final_state:
                 fsession_path = self.session_path / Path('final_states')
@@ -343,27 +328,8 @@ class RedGymEnv(Env):
                     fsession_path / Path(f'frame_r{self.total_reward:.4f}_{self.reset_count}_full.jpeg'), 
                     self.render(reduce_res=False))
 
-        if self.save_video and done:
-            self.full_frame_writer.close()
-            self.model_frame_writer.close()
-
-        if done:
-            self.all_runs.append(self.progress_reward)
-            with open(self.session_path / Path(f'all_runs_{self.instance_id}.json'), 'w') as f:
-                json.dump(self.all_runs, f)
-            pd.DataFrame(self.agent_stats).to_csv(
-                self.session_path / Path(f'agent_stats_{self.instance_id}.csv.gz'), compression='gzip', mode='a')
-    
-
-    
-    def get_knn_reward(self):
-        pre_rew = 0.004
-        post_rew = 0.01
-        cur_size = self.knn_index.get_current_count()
-        base = (self.base_explore if self.levels_satisfied else cur_size) * pre_rew
-        post = (cur_size if self.levels_satisfied else 0) * post_rew
-        return base + post
-    
+        if self.save_video:
+            self.finish_video()
     
     def save_screenshot(self, name):
         ss_dir = self.session_path / Path('screenshots')
