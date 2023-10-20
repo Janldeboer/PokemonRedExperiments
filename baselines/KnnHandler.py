@@ -8,9 +8,8 @@ import pandas as pd
 from pathlib import Path
 
 class KnnHandler:
-    def __init__(self, poke_reader, instance_id, session_path, num_elements=1000000, vec_dim=4320, print_rewards=False, save_video=False, save_final_state=False):
+    def __init__(self, poke_reader, num_elements=1000000, vec_dim=4320, print_rewards=False, save_video=False, save_final_state=False):
         
-        self.session_path = session_path
         self.num_elements = num_elements
         self.vec_dim = vec_dim
         
@@ -20,28 +19,21 @@ class KnnHandler:
         self.knn_index.init_index(max_elements=self.num_elements, ef_construction=100, M=16)
         
         self.poke_reader = poke_reader
-        self.instance_id = instance_id
         
         self.levels_satisfied = False
         self.base_explore = 0
         self.sim_frame_dist = 2000000
-        
-        
-        
-        
-        
 
     def update_frame_knn_index(self, frame_vec):
         
-        # Ensure the input vector has the correct dimensionality
-        if len(frame_vec) != self.vec_dim:
-            raise ValueError(f"Input vector has wrong dimensionality. Expected {self.vec_dim}, got {len(frame_vec)}")
-
         if self.poke_reader.get_levels_sum() >= 22 and not self.levels_satisfied:
             self.levels_satisfied = True
             self.base_explore = self.knn_index.get_current_count()
-            self.__init__(self.poke_reader, self.instance_id, self.session_path, self.num_elements, self.vec_dim)
-
+            
+            # in the original code, the knn handler was completely reset here
+            # i still don't know why
+            self.knn_index.init_index(max_elements=self.num_elements, ef_construction=100, M=16)
+            
         if self.knn_index.get_current_count() == 0:
             # if index is empty add current frame
             print("adding first frame to knn index")
@@ -56,9 +48,7 @@ class KnnHandler:
                 self.knn_index.add_items(
                     frame_vec, np.array([self.knn_index.get_current_count()])
                 )
-
-       
-    
+                
     def get_knn_reward(self):
         pre_rew = 0.004
         post_rew = 0.01

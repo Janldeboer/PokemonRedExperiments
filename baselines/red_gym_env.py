@@ -89,7 +89,7 @@ class RedGymEnv(Env):
 
         self.poke_reader = PokeRedReader(pyboy = self.pyboy)
         self.poke_rewarder = PokemonRedRewarder(poke_reader = self.poke_reader, save_screenshot = self.save_screenshot)
-        self.knn_handler = KnnHandler(poke_reader= self.poke_reader, instance_id=self.instance_id, session_path=self.session_path)
+        self.knn_handler = KnnHandler(poke_reader= self.poke_reader)
         self.screen = self.pyboy.botsupport_manager().screen()
 
         self.pyboy.set_emulation_speed(0 if config['headless'] else 6)
@@ -102,7 +102,7 @@ class RedGymEnv(Env):
         with open(self.init_state, "rb") as f:
             self.pyboy.load_state(f)
 
-        self.knn_handler = KnnHandler(poke_reader= self.poke_reader, instance_id=self.instance_id, session_path=self.session_path)
+        self.knn_handler = KnnHandler(poke_reader= self.poke_reader)
 
         self.recent_memory = np.zeros((self.output_shape[1]*self.memory_height, 3), dtype=np.uint8)
         
