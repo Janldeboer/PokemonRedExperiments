@@ -24,19 +24,19 @@ def make_env(rank, env_conf, seed=0):
     set_random_seed(seed)
     return _init
 
-if __name__ == '__main__':
-
-
+def main():
     ep_length = 2048 * 8
     sess_path = f'session_{str(uuid.uuid4())[:8]}'
     args = get_args('run_baseline_parallel.py', ep_length=ep_length, sess_path=sess_path)
 
     env_config = {
-                'headless': True, 'save_final_state': True, 'early_stop': False,
-                'action_freq': 24, 'init_state': '../has_pokedex_nballs.state', 'max_steps': ep_length, 
-                'print_rewards': True, 'save_video': False, 'fast_video': True, 'session_path': sess_path,
-                'gb_path': '../PokemonRed.gb', 'debug': False, 'sim_frame_dist': 2_000_000.0
-            }
+        'headless': True,
+        'early_stop': False,
+        'max_steps': ep_length, 
+        'save_video': False, 
+        'fast_video': True, 
+        'session_path': sess_path,
+    }
     
     env_config = change_env(env_config, args)
     
@@ -47,7 +47,7 @@ if __name__ == '__main__':
                                      name_prefix='poke')
     #env_checker.check_env(env)
     learn_steps = 40
-    file_name = 'session_e41c9eff/poke_38207488_steps' #'session_e41c9eff/poke_250871808_steps'
+    file_name = 'session_4da05e87_main_good/poke_439746560_steps' #'session_e41c9eff/poke_250871808_steps'
     
     #'session_bfdca25a/poke_42532864_steps' #'session_d3033abb/poke_47579136_steps' #'session_a17cc1f5/poke_33546240_steps' #'session_e4bdca71/poke_8945664_steps' #'session_eb21989e/poke_40255488_steps' #'session_80f70ab4/poke_58982400_steps'
     if exists(file_name + '.zip'):
@@ -63,3 +63,7 @@ if __name__ == '__main__':
     
     for i in range(learn_steps):
         model.learn(total_timesteps=(ep_length)*num_cpu*1000, callback=checkpoint_callback)
+
+if __name__ == '__main__':
+    main()
+    

@@ -1,0 +1,139 @@
+{
+    "RedGymEnv": {
+        "__init__": [
+            "reset"
+        ],
+        "reset": [
+            "init_knn",
+            "get_game_state_reward",
+            "render"
+        ],
+        "init_knn": [],
+        "render": [
+            "create_exploration_memory",
+            "create_recent_memory"
+        ],
+        "step": [
+            "run_action_on_emulator",
+            "append_agent_stats",
+            "render",
+            "update_frame_knn_index",
+            "update_heal_reward",
+            "update_reward",
+            "read_hp_fraction",
+            "check_if_done",
+            "save_and_print_info"
+        ],
+        "run_action_on_emulator": [
+            "add_video_frame",
+            "add_video_frame"
+        ],
+        "add_video_frame": [
+            "render",
+            "render"
+        ],
+        "append_agent_stats": [
+            "read_m",
+            "read_m",
+            "read_m",
+            "read_m",
+            "read_m",
+            "read_party",
+            "read_hp_fraction",
+            "get_badges"
+        ],
+        "update_frame_knn_index": [
+            "init_knn",
+            "get_levels_sum"
+        ],
+        "update_reward": [
+            "group_rewards",
+            "get_game_state_reward",
+            "group_rewards",
+            "save_screenshot",
+            "read_hp_fraction"
+        ],
+        "group_rewards": [
+            "read_hp_fraction"
+        ],
+        "create_exploration_memory": [
+            "group_rewards",
+            "get_badges",
+            "make_reward_channel",
+            "make_reward_channel",
+            "make_reward_channel"
+        ],
+        "create_recent_memory": [],
+        "check_if_done": [],
+        "save_and_print_info": [
+            "render",
+            "render"
+        ],
+        "read_m": [],
+        "read_bit": [
+            "read_m"
+        ],
+        "get_levels_sum": [
+            "read_m"
+        ],
+        "get_levels_reward": [
+            "get_levels_sum"
+        ],
+        "get_knn_reward": [],
+        "get_badges": [
+            "bit_count",
+            "read_m"
+        ],
+        "read_party": [
+            "read_m"
+        ],
+        "update_heal_reward": [
+            "read_hp_fraction",
+            "save_screenshot"
+        ],
+        "get_all_events_reward": [
+            "bit_count",
+            "read_m"
+        ],
+        "get_game_state_reward": [
+            "update_max_event_rew",
+            "get_levels_reward",
+            "update_max_op_level",
+            "get_knn_reward",
+            "get_badges"
+        ],
+        "save_screenshot": [
+            "render"
+        ],
+        "update_max_op_level": [
+            "read_m"
+        ],
+        "update_max_event_rew": [
+            "get_all_events_reward"
+        ],
+        "read_hp_fraction": [
+            "read_hp",
+            "read_hp"
+        ],
+        "read_hp": [
+            "read_m",
+            "read_m"
+        ],
+        "bit_count": [],
+        "read_triple": [
+            "read_m",
+            "read_m",
+            "read_m"
+        ],
+        "read_bcd": [],
+        "read_money": [
+            "read_bcd",
+            "read_m",
+            "read_bcd",
+            "read_bcd",
+            "read_m",
+            "read_m"
+        ],
+        "make_reward_channel": []
+    }
+}

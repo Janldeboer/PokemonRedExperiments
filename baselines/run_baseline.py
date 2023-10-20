@@ -15,11 +15,12 @@ updates_per_checkpoint = 4
 args = get_args('run_baseline.py', ep_length=run_steps, sess_path=sess_path)
 
 env_config = {
-                'headless': True, 'save_final_state': True, 'early_stop': False, 
-                'action_freq': 24, 'init_state': '../fast_text_start.state', 'max_steps': run_steps,
-                'print_rewards': True, 'save_video': True, 'session_path': sess_path,
-                'gb_path': '../PokemonRed.gb', 'debug': False, 'sim_frame_dist': 2_000_000.0
-            }
+    'headless': True, 
+    'early_stop': False, 
+    'max_steps': run_steps,
+    'save_video': True, 
+    'session_path': sess_path,
+}
 
 env_config = change_env(env_config, args)
 env = RedGymEnv(config=env_config)

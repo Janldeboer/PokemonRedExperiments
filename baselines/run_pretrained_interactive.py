@@ -31,19 +31,21 @@ if __name__ == '__main__':
     args = get_args(usage_string=None, headless=False, ep_length=ep_length, sess_path=sess_path)
 
     env_config = {
-                'headless': False, 'save_final_state': True, 'early_stop': False,
-                'action_freq': 24, 'init_state': '../has_pokedex_nballs.state', 'max_steps': ep_length, 
-                'print_rewards': True, 'save_video': False, 'fast_video': True, 'session_path': sess_path,
-                'gb_path': '../PokemonRed.gb', 'debug': False, 'sim_frame_dist': 2_000_000.0
-            }
+        'headless': False,
+        'early_stop': False,
+        'max_steps': ep_length, 
+        'save_video': False,
+        'fast_video': True, 
+        'session_path': sess_path,
+    }
     env_config = change_env(env_config, args)
     
     num_cpu = 1 #64 #46  # Also sets the number of episodes per training iteration
     env = make_env(0, env_config)() #SubprocVecEnv([make_env(i, env_config) for i in range(num_cpu)])
     
     #env_checker.check_env(env)
-    file_name = 'session_4da05e87_main_good/poke_439746560_steps'
-    
+    file_name = 'baselines/session_b30478f4/poke_49741824_past_gym1'
+    print(f"file_name: {file_name}.zip")
     if exists(file_name + '.zip'):
         print('\nloading checkpoint')
         model = PPO.load(file_name, env=env, custom_objects={'lr_schedule': 0, 'clip_range': 0})
