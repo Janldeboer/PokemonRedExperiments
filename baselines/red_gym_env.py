@@ -19,8 +19,35 @@ from gymnasium import Env, spaces
 from pyboy.utils import WindowEvent
 
 from PokeRedReader import PokeRedReader
+from PokemonRedRewarder import PokemonRedRewarder
+
+
+
 
 class RedGymEnv(Env):
+    
+    DEFAULTS = {
+        "s_path": None,
+        "instance_id": None,
+        "debug": False,
+        "gb_path": "../PokemonRed.gb",
+        "save_final_state": True,
+        "print_rewards": True,
+        "vec_dim": 4320,
+        "headless": False,
+        "num_elements": 20000,
+        "init_state": "../has_pokedex_nballs.state",
+        "act_freq": 24,
+        "max_steps": 16384,
+        "early_stopping": False,
+        "save_video": False,
+        "fast_video": True,
+        "downsample_factor": 2,
+        "frame_stacks": 3,
+        "similar_frame_dist": 2000000.0,
+        "reset_count": 0,
+        "all_runs": []
+    }
 
     VALID_ACTIONS = [
         WindowEvent.PRESS_ARROW_DOWN,
@@ -42,28 +69,6 @@ class RedGymEnv(Env):
         WindowEvent.RELEASE_BUTTON_B,
         WindowEvent.RELEASE_BUTTON_START,
     ]
-
-    DEFAULTS = {
-        'debug': None,
-        's_path': None,
-        'save_final_state': None,
-        'print_rewards': None,
-        'vec_dim': 4320,  #1000
-        'headless': None,
-        'num_elements': 20000,  # max
-        'init_state': None,
-        'act_freq': None,
-        'max_steps': None,
-        'early_stopping': None,
-        'save_video': None,
-        'fast_video': None,
-        'downsample_factor': 2,
-        'frame_stacks': 3,
-        'similar_frame_dist': None,
-        'reset_count': 0,
-        'instance_id': None,  # This will be overridden in __init__
-        'all_runs': [],
-    }
 
     def __init__(
         self, config=None):
@@ -106,6 +111,7 @@ class RedGymEnv(Env):
             )
 
         self.poke_reader = PokeRedReader(pyboy = self.pyboy)
+        self.poke_rewarder = PokemonRedRewarder(poke_reader = self.poke_reader, save_screenshot = self.save_screenshot)
         self.screen = self.pyboy.botsupport_manager().screen()
 
         self.pyboy.set_emulation_speed(0 if config['headless'] else 6)
@@ -141,14 +147,9 @@ class RedGymEnv(Env):
        
         self.levels_satisfied = False
         self.base_explore = 0
-        self.max_opponent_level = 0
-        self.max_event_rew = 0
-        self.max_level_rew = 0
-        self.last_health = 1
-        self.total_healing_rew = 0
-        self.died_count = 0
         self.step_count = 0
-        self.progress_reward = self.get_game_state_reward()
+        self.progress_reward = self.poke_rewarder.get_game_state_reward()
+        self.progress_reward['explore'] = self.get_knn_reward()
         self.total_reward = sum([val for _, val in self.progress_reward.items()])
         self.reset_count += 1
         return self.render(), {}
@@ -196,11 +197,11 @@ class RedGymEnv(Env):
 
         self.update_frame_knn_index(obs_flat)
             
-        self.update_heal_reward()
+        self.poke_rewarder.update_heal_reward()
 
         new_reward, new_prog = self.update_reward()
         
-        self.last_health = self.poke_reader.read_hp_fraction()
+        self.poke_rewarder.last_health = self.poke_reader.read_hp_fraction()
 
         # shift over short term reward memory
         self.recent_memory = np.roll(self.recent_memory, 3)
@@ -246,8 +247,8 @@ class RedGymEnv(Env):
             'pcount': self.poke_reader.read_m(0xD163), 'levels': levels, 'ptypes': self.poke_reader.read_party(),
             'hp': self.poke_reader.read_hp_fraction(),
             'frames': self.knn_index.get_current_count(),
-            'deaths': self.died_count, 'badge': self.poke_reader.get_badges(),
-            'event': self.progress_reward['event'], 'healr': self.total_healing_rew
+            'deaths': self.poke_rewarder.died_count, 'badge': self.poke_reader.get_badges(),
+            'event': self.progress_reward['event'], 'healr': self.poke_rewarder.total_healing_rew,
         })
 
     def update_frame_knn_index(self, frame_vec):
@@ -273,7 +274,8 @@ class RedGymEnv(Env):
     def update_reward(self):
         # compute reward
         old_prog = self.group_rewards()
-        self.progress_reward = self.get_game_state_reward()
+        self.progress_reward = self.poke_rewarder.get_game_state_reward()
+        self.progress_reward['explore'] = self.get_knn_reward()
         new_prog = self.group_rewards()
         new_total = sum([val for _, val in self.progress_reward.items()]) #sqrt(self.explore_reward * self.progress_reward)
         new_step = new_total - self.total_reward
@@ -378,17 +380,6 @@ class RedGymEnv(Env):
     
 
     
-    def get_levels_reward(self):
-        explore_thresh = 22
-        scale_factor = 4
-        level_sum = self.poke_reader.get_levels_sum()
-        if level_sum < explore_thresh:
-            scaled = level_sum
-        else:
-            scaled = (level_sum-explore_thresh) / scale_factor + explore_thresh
-        self.max_level_rew = max(self.max_level_rew, scaled)
-        return self.max_level_rew
-    
     def get_knn_reward(self):
         pre_rew = 0.004
         post_rew = 0.01
@@ -398,62 +389,6 @@ class RedGymEnv(Env):
         return base + post
     
     
-    def update_heal_reward(self):
-        cur_health = self.poke_reader.read_hp_fraction()
-        if cur_health > self.last_health:
-            if self.last_health > 0:
-                heal_amount = cur_health - self.last_health
-                if heal_amount > 0.5:
-                    print(f'healed: {heal_amount}')
-                    self.save_screenshot('healing')
-                self.total_healing_rew += heal_amount * 4
-            else:
-                self.died_count += 1
-    
-    def get_all_events_reward(self):
-        return max(sum([self.poke_reader.bit_count(self.poke_reader.read_m(i)) for i in range(0xD747, 0xD886)]) - 13, 0)
-  
-    def get_game_state_reward(self, print_stats=False):
-        # addresses from https://datacrystal.romhacking.net/wiki/Pok%C3%A9mon_Red/Blue:RAM_map
-        # https://github.com/pret/pokered/blob/91dc3c9f9c8fd529bb6e8307b58b96efa0bec67e/constants/event_constants.asm
-        '''
-        num_poke = self.poke_reader.read_m(0xD163)
-        poke_xps = [self.poke_reader.read_triple(a) for a in [0xD179, 0xD1A5, 0xD1D1, 0xD1FD, 0xD229, 0xD255]]
-        #money = self.poke_reader.read_money() - 975 # subtract starting money
-        seen_poke_count = sum([self.poke_reader.bit_count(self.poke_reader.read_m(i)) for i in range(0xD30A, 0xD31D)])
-        all_events_score = sum([self.poke_reader.bit_count(self.poke_reader.read_m(i)) for i in range(0xD747, 0xD886)])
-        oak_parcel = self.poke_reader.read_bit(0xD74E, 1) 
-        oak_pokedex = self.poke_reader.read_bit(0xD74B, 5)
-        opponent_level = self.poke_reader.read_m(0xCFF3)
-        self.max_opponent_level = max(self.max_opponent_level, opponent_level)
-        enemy_poke_count = self.poke_reader.read_m(0xD89C)
-        self.max_opponent_poke = max(self.max_opponent_poke, enemy_poke_count)
-        
-        if print_stats:
-            print(f'num_poke : {num_poke}')
-            print(f'poke_levels : {poke_levels}')
-            print(f'poke_xps : {poke_xps}')
-            #print(f'money: {money}')
-            print(f'seen_poke_count : {seen_poke_count}')
-            print(f'oak_parcel: {oak_parcel} oak_pokedex: {oak_pokedex} all_events_score: {all_events_score}')
-        '''
-        
-        state_scores = {
-            'event': self.update_max_event_rew(),  
-            #'party_xp': 0.1*sum(poke_xps),
-            'level': self.get_levels_reward(), 
-            'heal': self.total_healing_rew,
-            'op_lvl': self.update_max_op_level(),
-            'dead': -0.1*self.died_count,
-            'badge': self.poke_reader.get_badges() * 2,
-            #'op_poke': self.max_opponent_poke * 800,
-            #'money': money * 3,
-            #'seen_poke': seen_poke_count * 400,
-            'explore': self.get_knn_reward()
-        }
-        
-        return state_scores
-    
     def save_screenshot(self, name):
         ss_dir = self.session_path / Path('screenshots')
         ss_dir.mkdir(exist_ok=True)
@@ -461,16 +396,7 @@ class RedGymEnv(Env):
             ss_dir / Path(f'frame{self.instance_id}_r{self.total_reward:.4f}_{self.reset_count}_{name}.jpeg'), 
             self.render(reduce_res=False))
     
-    def update_max_op_level(self):
-        #opponent_level = self.poke_reader.read_m(0xCFE8) - 5 # base level
-        opponent_level = max(self.poke_reader.read_opponent_levels()) - 5
-        #if opponent_level >= 7:
-        #    self.save_screenshot('highlevelop')
-        self.max_opponent_level = max(self.max_opponent_level, opponent_level)
-        return self.max_opponent_level * 0.2
+
     
-    def update_max_event_rew(self):
-        cur_rew = self.get_all_events_reward()
-        self.max_event_rew = max(cur_rew, self.max_event_rew)
-        return self.max_event_rew
+
 
