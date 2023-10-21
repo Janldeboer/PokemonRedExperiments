@@ -44,7 +44,7 @@ class RedGymEnv(Env):
         # Set this in SOME subclasses
         self.metadata = {"render.modes": []}
         self.reward_range = (0, 15000)
-        
+
         # Set these in ALL subclasses
         self.action_space = spaces.Discrete(len(PokeRed.VALID_ACTIONS))
         self.observation_space = spaces.Box(low=0, high=255, shape=self.output_full, dtype=np.uint8)
@@ -107,7 +107,11 @@ class RedGymEnv(Env):
         # restart game, skipping credits
         self.poke_red.load_from_state(self.init_state)
 
-        self.knn_handler = KnnHandler()
+        if self.use_screen_explore:
+            
+          self.knn_handler = KnnHandler()
+        else:
+            self.init_map_mem()
 
         self.initialize_state()
 
@@ -124,7 +128,9 @@ class RedGymEnv(Env):
         self.reset_count += 1
         return self.render_for_ml(), {}
     
-    
+    def init_map_mem(self):
+        self.seen_coords = {}
+
     def render(self, reduce_res=True, update_mem=True):
         resolution = self.output_shape if reduce_res else None
         pixels = self.poke_red.get_screen(resolution)
@@ -163,8 +169,12 @@ class RedGymEnv(Env):
         obs_flat = obs_memory[
             frame_start:frame_start+self.output_shape[0], ...].flatten().astype(np.float32)
 
-        self.knn_handler.update_frame_knn_index(obs_flat)
-        self.knn_handler.update_levels_satisfied(sum(self.poke_red.get_poke_info('Level')))
+        if self.use_screen_explore:
+            
+            self.knn_handler.update_frame_knn_index(obs_flat)
+            self.knn_handler.update_levels_satisfied(sum(self.poke_red.get_poke_info('Level')))
+        else:
+            self.update_seen_coords()
             
         new_reward, new_prog = self.update_reward()
         self.update_recent_memory(new_prog)
@@ -185,13 +195,31 @@ class RedGymEnv(Env):
         agent_stats = self.poke_red.get_agent_stats()
         agent_stats['last_action'] = action
         agent_stats['step'] = self.step_count
-        agent_stats['frames'] = self.knn_handler.knn_index.get_current_count()
+      
+        if self.use_screen_explore:
+            expl = ('frames', self.knn_index.get_current_count())
+        else:
+            expl = ('coord_count', len(self.seen_coords))
+            
+        agent_stats[expl[0]] = expl[1]
         agent_stats['deaths'] = self.poke_rewarder.died_count
         agent_stats['event'] = self.progress_reward['event']
         agent_stats['healr'] = self.poke_rewarder.total_healing_rew
         
         self.agent_stats.append(agent_stats)
     
+    def update_seen_coords(self):
+        x_pos = self.poke_reader.read_m(0xD362)
+        y_pos = self.poke_reader.read_m(0xD361)
+        map_n = self.poke_reader.read_m(0xD35E)
+        coord_string = f"x:{x_pos} y:{y_pos} m:{map_n}"
+        if self.get_levels_sum() >= 22 and not self.levels_satisfied:
+            self.levels_satisfied = True
+            self.base_explore = len(self.seen_coords)
+            self.seen_coords = {}
+        
+        self.seen_coords[coord_string] = self.step_count
+
     def update_reward(self):
         level = self.progress_reward['level']
         hp = self.poke_red.read_hp_fraction()
@@ -215,7 +243,7 @@ class RedGymEnv(Env):
                     new_prog[1]-old_prog[1], 
                     new_prog[2]-old_prog[2])
                )
-        
+
     def check_if_done(self):
         if self.early_stop:
             return self.step_count > 128 and self.recent_memory.sum() < (255 * 1)
@@ -259,6 +287,26 @@ class RedGymEnv(Env):
 
         if self.recorder:
             self.recorder.finish_video()
+
+                
+    def get_all_events_reward(self): # TODO: Check what of this to merge, function was moved
+        # adds up all event flags, exclude museum ticket
+        event_flags_start = 0xD747
+        event_flags_end = 0xD886
+        museum_ticket = (0xD754, 0)
+        base_event_flags = 13
+        return max(
+            sum(
+                [
+                    self.bit_count(self.read_m(i))
+                    for i in range(event_flags_start, event_flags_end)
+                ]
+            )
+            - base_event_flags
+            - int(self.read_bit(museum_ticket[0], museum_ticket[1])),
+        0,
+    )
+
     
     def save_screenshot(self, name):
         ss_dir = self.session_path / Path('screenshots')

@@ -32,15 +32,17 @@ if __name__ == '__main__':
 
     sess_path = f'new_sessions/new_session_{get_timestamp()}__{str(uuid.uuid4())[:8]}'
     ep_length = 2**16
-    args = get_args(usage_string=None, headless=False, ep_length=ep_length, sess_path=sess_path)
 
     env_config = {
+        'gb_path': '../PokemonRed.gb',
+        'init_state': '../has_pokedex_nballs.state',
         'headless': False,
         'early_stop': False,
         'max_steps': ep_length, 
         'save_video': False,
         'fast_video': True, 
         'session_path': sess_path,
+        'extra_buttons': True
     }
     env_config = change_env(env_config, args)
     
