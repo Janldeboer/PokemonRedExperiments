@@ -85,8 +85,7 @@ class PokeRed:
     def load_from_state(self, state_file):
         with open(state_file, "rb") as f:
             self.pyboy.load_state(f)
-            
-            
+            print(f"Loaded state from {state_file}")
     
     def plot_memory(self, memory):
         memory_normalized = memory.astype(float) / 255

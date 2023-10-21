@@ -19,12 +19,29 @@ from PokeRecorder import PokeRecorder
 from PokeRed import PokeRed
 from KnnHandler import KnnHandler
 
+from stable_baselines3.common.utils import set_random_seed
+
 from PokeReadInputLayer import create_info_bars
 
 DEFAULTS_PATH = './default_config.json'
 
 with open(DEFAULTS_PATH, 'r') as f:
     DEFAULTS = json.load(f)
+    
+def make_env(rank, env_conf, seed=0):
+    """
+    Utility function for multiprocessed env.
+    :param env_id: (str) the environment ID
+    :param num_env: (int) the number of environments you wish to have in subprocesses
+    :param seed: (int) the initial seed for RNG
+    :param rank: (int) index of the subprocess
+    """
+    def _init():
+        env = RedGymEnv(env_conf)
+        env.reset(seed=(seed + rank))
+        return env
+    set_random_seed(seed)
+    return _init
 
 class RedGymEnv(Env):
     def __init__(self, config=None, new_shape=False):
@@ -90,7 +107,7 @@ class RedGymEnv(Env):
         for key, value in config.items():
             setattr(self, key, value)
             
-        self.video_interval = 256 * self.action_freq
+        self.video_interval = 256 * self.act_freq
         self.instance_id = str(uuid.uuid4())[:8] if 'instance_id' not in config else config['instance_id']
         self.session_path.mkdir(exist_ok=True)
         self.head = 'headless' if self.headless else 'SDL2'
@@ -107,23 +124,22 @@ class RedGymEnv(Env):
         # restart game, skipping credits
         self.poke_red.load_from_state(self.init_state)
 
-        if self.use_screen_explore:
-            
-          self.knn_handler = KnnHandler()
-        else:
+        self.knn_handler = KnnHandler()
+        if not self.use_screen_explore:
             self.init_map_mem()
 
         self.initialize_state()
 
         self.agent_stats = []
         
-        if self.recorder:
+        if hasattr(self, 'recorder') and self.recorder:
             self.recorder.finish_video()
        
         self.levels_satisfied = False
         self.step_count = 0
         self.progress_reward = self.poke_rewarder.get_rewards()
-        self.progress_reward['explore'] = self.knn_handler.get_knn_reward()
+        foobar = None if self.use_screen_explore else len(self.seen_coords)
+        self.progress_reward['explore'] = self.knn_handler.get_knn_reward(foobar)
         self.total_reward = sum([val for _, val in self.progress_reward.items()])
         self.reset_count += 1
         return self.render_for_ml(), {}
@@ -197,7 +213,7 @@ class RedGymEnv(Env):
         agent_stats['step'] = self.step_count
       
         if self.use_screen_explore:
-            expl = ('frames', self.knn_index.get_current_count())
+            expl = ('frames', self.knn_handler.knn_index.get_current_count())
         else:
             expl = ('coord_count', len(self.seen_coords))
             
@@ -209,11 +225,12 @@ class RedGymEnv(Env):
         self.agent_stats.append(agent_stats)
     
     def update_seen_coords(self):
-        x_pos = self.poke_reader.read_m(0xD362)
-        y_pos = self.poke_reader.read_m(0xD361)
-        map_n = self.poke_reader.read_m(0xD35E)
+        x_pos = self.poke_red.get_stat('X')
+        y_pos = self.poke_red.get_stat('Y')
+        map_n = self.poke_red.get_stat('Map')
+        
         coord_string = f"x:{x_pos} y:{y_pos} m:{map_n}"
-        if self.get_levels_sum() >= 22 and not self.levels_satisfied:
+        if sum(self.poke_red.get_poke_info('Level')) >= 22 and not self.levels_satisfied:
             self.levels_satisfied = True
             self.base_explore = len(self.seen_coords)
             self.seen_coords = {}
@@ -226,7 +243,8 @@ class RedGymEnv(Env):
         explore = self.progress_reward['explore']
         
         self.progress_reward = self.poke_rewarder.update_rewards({"hp": hp})
-        self.progress_reward['explore'] = self.knn_handler.get_knn_reward()
+        foobar = None if self.use_screen_explore else len(self.seen_coords)
+        self.progress_reward['explore'] = self.knn_handler.get_knn_reward(foobar)
         # compute reward
         old_prog = level, hp, explore
 
@@ -285,7 +303,7 @@ class RedGymEnv(Env):
                     fsession_path / Path(f'frame_r{self.total_reward:.4f}_{self.reset_count}_full.jpeg'), 
                     self.render(reduce_res=False))
 
-        if self.recorder:
+        if hasattr(self, 'recorder') and self.recorder:
             self.recorder.finish_video()
 
                 

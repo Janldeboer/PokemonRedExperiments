@@ -7,7 +7,6 @@ from stable_baselines3.common import env_checker
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.callbacks import CheckpointCallback
-from argparse_pokemon import *
 from datetime import datetime
 
 def make_env(rank, env_conf, seed=0):
@@ -31,20 +30,21 @@ def get_timestamp():
 if __name__ == '__main__':
 
     sess_path = f'new_sessions/new_session_{get_timestamp()}__{str(uuid.uuid4())[:8]}'
+    sess_path = Path(sess_path)
     ep_length = 2**16
 
     env_config = {
         'gb_path': '../PokemonRed.gb',
-        'init_state': '../has_pokedex_nballs.state',
+        'init_state': '../has_pokedex.state',
         'headless': False,
         'early_stop': False,
         'max_steps': ep_length, 
         'save_video': False,
         'fast_video': True, 
         'session_path': sess_path,
+        'use_screen_explore': False,
         'extra_buttons': True
     }
-    env_config = change_env(env_config, args)
     
     num_cpu = 1 #64 #46  # Also sets the number of episodes per training iteration
     env = make_env(0, env_config)() #SubprocVecEnv([make_env(i, env_config) for i in range(num_cpu)])

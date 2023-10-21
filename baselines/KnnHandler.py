@@ -44,10 +44,10 @@ class KnnHandler:
             identifiers = np.array([new_frame_id])
             self.knn_index.add_items(frame_vec, identifiers)
                 
-    def get_knn_reward(self):
+    def get_knn_reward(self, foobar=None):
+        cur_size = foobar if foobar else self.knn_index.get_current_count()
         pre_rew = 0.004
         post_rew = 0.01
-        cur_size = self.knn_index.get_current_count()
         base = (self.base_explore if self.levels_satisfied else cur_size) * pre_rew
         post = (cur_size if self.levels_satisfied else 0) * post_rew
         return base + post
