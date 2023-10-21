@@ -1,0 +1,58 @@
+{
+    "RedGymEnv": {
+        "__init__": [
+            "reset"
+        ],
+        "reset": [
+            "render_with_memory"
+        ],
+        "render": [],
+        "render_with_memory": [
+            "render",
+            "add_memory_to_render"
+        ],
+        "add_memory_to_render": [
+            "create_exploration_memory"
+        ],
+        "create_exploration_memory": [
+            "group_rewards",
+            "make_reward_channel"
+        ],
+        "create_recent_memory": [],
+        "step": [
+            "run_action_on_emulator",
+            "append_agent_stats",
+            "render_with_memory",
+            "update_reward",
+            "check_if_done",
+            "save_and_print_info"
+        ],
+        "run_action_on_emulator": [
+            "add_video_frame"
+        ],
+        "add_video_frame": [
+            "render",
+            "render_with_memory"
+        ],
+        "finish_video": [],
+        "append_agent_stats": [],
+        "update_reward": [
+            "group_rewards",
+            "save_screenshot"
+        ],
+        "group_rewards": [],
+        "check_if_done": [],
+        "save_and_print_info": [
+            "clean_up",
+            "render"
+        ],
+        "clean_up": [
+            "finish_video",
+            "render"
+        ],
+        "save_screenshot": [
+            "render"
+        ],
+        "make_reward_channel": []
+    }
+}

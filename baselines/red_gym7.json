@@ -1,0 +1,108 @@
+{
+    "PokeRedGym": {
+        "__init__": {
+            "calls": [],
+            "length": 1
+        },
+        "reset": {
+            "calls": [],
+            "length": 1
+        }
+    },
+    "RedGymEnv": {
+        "__init__": {
+            "calls": [
+                "load_config",
+                "setup_enivronment",
+                "reset"
+            ],
+            "length": 13
+        },
+        "setup_enivronment": {
+            "calls": [],
+            "length": 2
+        },
+        "load_config": {
+            "calls": [],
+            "length": 6
+        },
+        "initialize_state": {
+            "calls": [],
+            "length": 2
+        },
+        "reset": {
+            "calls": [
+                "initialize_state",
+                "render_for_ml"
+            ],
+            "length": 13
+        },
+        "render": {
+            "calls": [],
+            "length": 4
+        },
+        "render_for_ml": {
+            "calls": [
+                "render",
+                "add_memory_to_render"
+            ],
+            "length": 3
+        },
+        "add_memory_to_render": {
+            "calls": [],
+            "length": 6
+        },
+        "plot_memory": {
+            "calls": [],
+            "length": 3
+        },
+        "step": {
+            "calls": [
+                "append_agent_stats",
+                "render_for_ml",
+                "update_reward",
+                "update_recent_memory",
+                "check_if_done",
+                "save_and_print_info"
+            ],
+            "length": 14
+        },
+        "update_recent_memory": {
+            "calls": [],
+            "length": 4
+        },
+        "append_agent_stats": {
+            "calls": [],
+            "length": 8
+        },
+        "update_reward": {
+            "calls": [
+                "save_screenshot"
+            ],
+            "length": 12
+        },
+        "check_if_done": {
+            "calls": [],
+            "length": 1
+        },
+        "save_and_print_info": {
+            "calls": [
+                "clean_up",
+                "render"
+            ],
+            "length": 3
+        },
+        "clean_up": {
+            "calls": [
+                "render"
+            ],
+            "length": 5
+        },
+        "save_screenshot": {
+            "calls": [
+                "render"
+            ],
+            "length": 3
+        }
+    }
+}

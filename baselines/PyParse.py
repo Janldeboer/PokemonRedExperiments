@@ -24,7 +24,7 @@ def extract_relations(source_code):
                 if isinstance(sub_node, ast.FunctionDef):
                     method_name = sub_node.name
                     local_methods.add(method_name)  # Add to local methods set
-                    relations[class_name][method_name] = []
+                    relations[class_name][method_name] = {"calls": [], "length": len(sub_node.body)}
 
             for sub_node in ast.walk(node):
                 if isinstance(sub_node, ast.FunctionDef):
@@ -37,14 +37,24 @@ def extract_relations(source_code):
                             elif isinstance(method_node.func, ast.Attribute):
                                 called_method = method_node.func.attr
 
-                            if called_method in local_methods:
-                                relations[class_name][method_name].append(called_method)
+                            if called_method in local_methods and called_method not in relations[class_name][method_name]["calls"]:
+                                relations[class_name][method_name]["calls"].append(called_method)
                         
                         # if isinstance(method_node, ast.Name):
                         #     relations["classes"][class_name]["methods"][method_name]["variables"].append(method_node.id)
                             
     return relations
 
+def generate_mermaid_diagram(data):
+    mermaid_lines = []
+    mermaid_lines.append("graph TD")
+
+    for key, values in data.items():
+        calls = values["calls"]
+        for value in calls:
+            mermaid_lines.append(f"    {key} --> {value}")
+
+    return "\n".join(mermaid_lines)
 
 def main():
     parser = argparse.ArgumentParser(description="Extract relations from Python code.")
@@ -59,6 +69,13 @@ def main():
     source_code = read_source_code(args.input)
     relations = extract_relations(source_code)
     write_json_to_file(relations, args.output)
+    
+    first_class = list(relations.keys())[0]
+    functions = relations[first_class]
+    mermaid_diagram = generate_mermaid_diagram(functions)
+    mermaid_filename = args.output.replace(".json", ".txt")
+    with open(mermaid_filename, "w") as f:
+        f.write(mermaid_diagram)
 
 
 if __name__ == "__main__":
