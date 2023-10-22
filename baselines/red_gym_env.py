@@ -12,7 +12,7 @@ import pandas as pd
 from einops import rearrange
 from skimage.transform import resize
 
-from gymnasium import Env, spaces
+from gymnasium import Env spaces
 from PokeRedReader import PokeRedReader
 from PokeRedRewarder import PokeRedRewarder
 from PokeRecorder import PokeRecorder
@@ -41,6 +41,11 @@ def make_env(rank, env_conf, seed=0):
         return env
     set_random_seed(seed)
     return _init
+
+# Coming soon: A wrapper encapsulating the gym environment, pokemon red, and the rewarder
+class PokemonRedRLSuite:
+    def __init__(self):
+        pass
 
 class RedGymEnv(Env):
     def __init__(self, config=None):
@@ -117,10 +122,10 @@ class RedGymEnv(Env):
     
     def render_for_ml(self, update_mem=True):
         pixels = self.render(reduce_res=True, update_mem=update_mem)
-        pixels = self.add_memory_to_render()
+        pixels = self.add_infobar_to_render()
         return pixels
 
-    def add_memory_to_render(self):
+    def add_infobar_to_render(self):
         pad = np.zeros(shape=(self.mem_padding, self.output_shape[1], 1), dtype=np.uint8)
         info_bars = create_info_bars(self.last_rewards, self.output_shape[1], self.memory_height, self.col_steps)
         full_image =  np.concatenate((info_bars, pad, self.last_frame), axis=0)
@@ -130,14 +135,8 @@ class RedGymEnv(Env):
 
         self.poke_red.run_action_on_emulator(action)
 
-        #self.recent_frames = np.roll(self.recent_frames, 1, axis=0)
-        obs_memory = self.render_for_ml()
-
-        # trim off memory from frame for knn index
-        frame_start = self.memory_height + self.mem_padding
-        obs_flat = obs_memory[
-            frame_start:frame_start+self.output_shape[0], ...].flatten().astype(np.float32)
-            
+        obs_memory, obs_flat = self.get_agent_state(self.poke_red.get_all_stats())
+        
         new_reward = self.poke_rewarder.update_rewards(self.poke_red.get_all_stats(), obs_flat)
         #self.update_recent_memory(new_prog)
         step_limit_reached = self.check_if_done()
@@ -146,12 +145,20 @@ class RedGymEnv(Env):
         self.step_count += 1
 
         return obs_memory, new_reward*0.1, False, step_limit_reached, {}
+    
+    def get_agent_state(self, game_state):
+        #self.recent_frames = np.roll(self.recent_frames, 1, axis=0)
+        obs_memory = self.render_for_ml()
+
+        # trim off memory from frame for knn index
+        frame_start = self.memory_height + self.mem_padding
+        obs_flat = obs_memory[
+            frame_start:frame_start+self.output_shape[0], ...].flatten().astype(np.float32)
+            
+        return obs_memory, obs_flat
 
     def check_if_done(self):
-        if self.early_stop:
-            return self.step_count > 128 #and self.recent_memory.sum() < (255 * 1)
-        else:
-            return self.step_count >= self.max_steps
+        return self.step_count >= self.max_steps
 
     def save_and_print_info(self, done, obs_memory):
         if self.print_rewards:
