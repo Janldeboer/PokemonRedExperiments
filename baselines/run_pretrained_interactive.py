@@ -42,15 +42,16 @@ if __name__ == '__main__':
         'save_video': False,
         'fast_video': True, 
         'session_path': sess_path,
-        'use_screen_explore': False,
-        'extra_buttons': True
+        'use_screen_explore': True,
+        'extra_buttons': True,
+        'frame_stacks': 1,
     }
     
     num_cpu = 1 #64 #46  # Also sets the number of episodes per training iteration
     env = make_env(0, env_config)() #SubprocVecEnv([make_env(i, env_config) for i in range(num_cpu)])
     
     #env_checker.check_env(env)
-    file_name = 'baselines/session_b30478f4/poke_49741824_past_gym1'
+    file_name = 'nope' #'baselines/session_b30478f4/poke_49741824_past_gym1'
     print(f"file_name: {file_name}.zip")
     if exists(file_name + '.zip'):
         print('\nloading checkpoint')

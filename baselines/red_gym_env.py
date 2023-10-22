@@ -1,7 +1,7 @@
 import json
 import sys
 import uuid
-from math import floor
+from math import floor, prod
 from pathlib import Path
 
 import hnswlib
@@ -51,9 +51,12 @@ class RedGymEnv(Env):
         self.poke_red = PokeRed(self.gb_path, state_file=self.init_state, head=self.head)
 
         self.poke_rewarder = PokeRedRewarder()
-        self.knn_handler = KnnHandler()
+        self.vec_dim = prod(self.output_shape)
+        self.knn_handler = KnnHandler(vec_dim=self.vec_dim)
         self.last_screen = None
         self.levels_satisfied = False
+        
+        self.last_frame = None
         
         if self.save_video:
             self.recorder = PokeRecorder(self.session_path, self.instance_id, self.output_shape, self.render, self.render_for_ml, self.reset_count)
@@ -69,25 +72,13 @@ class RedGymEnv(Env):
         self.reset()
         
     def setup_enivronment(self, new_shape):
-        if new_shape:
-            self.output_shape = (36, 40, 3)
+        #if new_shape:
+            self.output_shape = (36, 40, 1)
             self.mem_padding = 2
             self.memory_height = 8
             self.col_steps = 16
             self.output_full = (
-                self.output_shape[0] * self.frame_stacks + 2 * (self.mem_padding + self.memory_height),
-                                self.output_shape[1],
-                                self.output_shape[2]
-            )
-        else:
-            # This defines the whole observation space for the agent
-            # Changes is input and encoding should be reflected here
-            self.output_shape = (36, 40, 3)
-            self.mem_padding = 2
-            self.memory_height = 8
-            self.col_steps = 16
-            self.output_full = (
-                self.output_shape[0] * self.frame_stacks + 2 * (self.mem_padding + self.memory_height),
+                self.output_shape[0] * self.frame_stacks + self.memory_height + self.mem_padding,
                                 self.output_shape[1],
                                 self.output_shape[2]
             ) # (128, 40, 3) : 36 * 3  + 2 * (2 + 8)
@@ -100,7 +91,7 @@ class RedGymEnv(Env):
         #     self.output_shape[2]
         # )
         
-        print(f'output shape: {self.output_full}')
+            print(f'output shape: {self.output_full}')
         
     def load_config(self, config):
         config = {**DEFAULTS, **(config or {})}
@@ -113,18 +104,19 @@ class RedGymEnv(Env):
         self.head = 'headless' if self.headless else 'SDL2'
             
     def initialize_state(self):
-        self.recent_memory = np.zeros((self.output_shape[1]*self.memory_height, 3), dtype=np.uint8)
-        self.recent_frames = np.zeros(
-            (self.frame_stacks, self.output_shape[0], 
-            self.output_shape[1], self.output_shape[2]),
-            dtype=np.uint8)
+        #self.recent_memory = np.zeros((self.output_shape[1]*self.memory_height, 1), dtype=np.uint8)
+        # self.recent_frames = np.zeros(
+        #     (self.frame_stacks, self.output_shape[0], 
+        #     self.output_shape[1], self.output_shape[2]),
+        #     dtype=np.uint8)
+        pass
             
     def reset(self, seed=None):
         self.seed = seed
         # restart game, skipping credits
         self.poke_red.load_from_state(self.init_state)
 
-        self.knn_handler = KnnHandler()
+        self.knn_handler = KnnHandler(vec_dim=self.vec_dim)
         if not self.use_screen_explore:
             self.init_map_mem()
 
@@ -151,7 +143,7 @@ class RedGymEnv(Env):
         resolution = self.output_shape if reduce_res else None
         pixels = self.poke_red.get_screen(resolution)
         if reduce_res and update_mem:
-            self.recent_frames[0] = pixels
+            self.last_frame = pixels
         return pixels
     
     def render_for_ml(self, update_mem=True):
@@ -160,11 +152,11 @@ class RedGymEnv(Env):
         return pixels
 
     def add_memory_to_render(self):
-        pad = np.zeros(shape=(self.mem_padding, self.output_shape[1], 3), dtype=np.uint8)
+        pad = np.zeros(shape=(self.mem_padding, self.output_shape[1], 1), dtype=np.uint8)
         info_bars = create_info_bars(self.progress_reward, self.output_shape[1], self.memory_height, self.col_steps)
-        recent_memory = rearrange(self.recent_memory, '(w h) c -> h w c', h=self.memory_height)
-        rearranged_frames = rearrange(self.recent_frames, 'f h w c -> (f h) w c')
-        full_image =  np.concatenate((info_bars, pad, recent_memory, pad, rearranged_frames), axis=0)
+        #recent_memory = rearrange(self.recent_memory, '(w h) c -> h w c', h=self.memory_height)
+        #rearranged_frames = rearrange(self.recent_frames, 'f h w c -> (f h) w c')
+        full_image =  np.concatenate((info_bars, pad, self.last_frame), axis=0)
         return full_image
     
     def plot_memory(self, memory):
@@ -177,13 +169,15 @@ class RedGymEnv(Env):
         self.poke_red.run_action_on_emulator(action)
         self.append_agent_stats(action)
 
-        self.recent_frames = np.roll(self.recent_frames, 1, axis=0)
+        #self.recent_frames = np.roll(self.recent_frames, 1, axis=0)
         obs_memory = self.render_for_ml()
 
         # trim off memory from frame for knn index
-        frame_start = 2 * (self.memory_height + self.mem_padding)
+        frame_start = self.memory_height + self.mem_padding
         obs_flat = obs_memory[
             frame_start:frame_start+self.output_shape[0], ...].flatten().astype(np.float32)
+        
+        print(f"obs_flat: {obs_flat.shape}")
 
         if self.use_screen_explore:
             
@@ -193,7 +187,7 @@ class RedGymEnv(Env):
             self.update_seen_coords()
             
         new_reward, new_prog = self.update_reward()
-        self.update_recent_memory(new_prog)
+        #self.update_recent_memory(new_prog)
         step_limit_reached = self.check_if_done()
         self.save_and_print_info(step_limit_reached, obs_memory)
 
@@ -204,8 +198,6 @@ class RedGymEnv(Env):
     def update_recent_memory(self, new_prog):
         self.recent_memory = np.roll(self.recent_memory, 3)
         self.recent_memory[0, 0] = min(new_prog[0] * 64 * 100, 255)
-        self.recent_memory[0, 1] = min(new_prog[1] * 64 * 2000, 255)
-        self.recent_memory[0, 2] = min(new_prog[2] * 128 * 160, 255)
     
     def append_agent_stats(self, action):
         agent_stats = self.poke_red.get_agent_stats()
@@ -264,7 +256,7 @@ class RedGymEnv(Env):
 
     def check_if_done(self):
         if self.early_stop:
-            return self.step_count > 128 and self.recent_memory.sum() < (255 * 1)
+            return self.step_count > 128 #and self.recent_memory.sum() < (255 * 1)
         else:
             return self.step_count >= self.max_steps
 

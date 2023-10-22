@@ -21,7 +21,8 @@ def main():
                 'print_rewards': True, 'save_video': False, 'fast_video': True, 'session_path': sess_path,
                 'gb_path': '../PokemonRed.gb', 'debug': False, 'sim_frame_dist': 2_000_000.0, 
                 'use_screen_explore': False, 'reward_scale': 4, 'extra_buttons': False,
-                'explore_weight': 3 # 2.5
+                'explore_weight': 3, # 2.5,
+                'frame_stacks': 1,
             }
     
     print(env_config)
