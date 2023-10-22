@@ -96,7 +96,7 @@ class PokeRedReader:
             'pcount': self.read_m(self.P_COUNT_ADDR), 
             'levels': self.get_poke_info_for_all('Level'), 
             'ptypes': self.read_party(),
-            'hp': self.read_hp_fraction(),
+            'Relative HP': self.read_hp_fraction(),
             'badge': self.get_badges(),
         }
         return agent_stats

@@ -141,10 +141,24 @@ class PokeRed:
             'pcount': self.get_stat('Party Count'),
             'levels': self.get_poke_info('Level'), 
             'ptypes': [self.get_stat('Party', info_index=i) for i in range(6)],
-            'hp': self.read_hp_fraction(),
+            'Relative HP': self.read_hp_fraction(),
             'badge': self.get_stat('Badges'),
         }
         return agent_stats
+    
+    def get_all_stats(self):
+        all_stats = {}
+        for stat, stat_info in self.STATS.items():
+            if stat_info["is_poke_stat"]:
+                all_stats[stat] = self.get_poke_info(stat)
+            elif stat_info["amount"] > 1:
+                all_stats[stat] = [self.get_stat(stat, info_index=i) for i in range(stat_info["amount"])]
+            else:
+                all_stats[stat] = self.get_stat(stat)
+                
+        all_stats['Relative HP'] = self.read_hp_fraction() # TODO: remove this, but it's still used a lot
+                
+        return all_stats
     
     # For some reason we use this a lot
     def read_hp_fraction(self):

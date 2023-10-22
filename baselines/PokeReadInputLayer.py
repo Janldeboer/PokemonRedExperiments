@@ -17,11 +17,11 @@ def make_reward_channel(r_val, w, h, col_steps):
 def create_info_bars(progress_reward, w, h, col_steps):
     bar_height = h // 3
     remainder = h % 3
-
-    level = min(progress_reward['level'] * 100, w)
-    hp = min(progress_reward['hp'] * w, w)
-    explore = min(progress_reward['explore'] * 160, w)
-    badges = progress_reward['badge']
+    
+    level = min(progress_reward['level'] * 100, w) if 'level' in progress_reward else 0
+    hp = min(progress_reward['Relative HP'] * w, w) if 'Relative HP' in progress_reward else 0
+    explore = min(progress_reward['explore'] * 160, w) if 'explore' in progress_reward else 0
+    badges = progress_reward['badge'] if 'badge' in progress_reward else 0
 
     level_bar = make_reward_channel(level, w, bar_height, col_steps)
     hp_bar = make_reward_channel(hp, w, bar_height, col_steps)
