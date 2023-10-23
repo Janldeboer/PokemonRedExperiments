@@ -8,6 +8,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.callbacks import CheckpointCallback
 from datetime import datetime
+from PokePolicy import PokePolicy
 
 def make_env(rank, env_conf, seed=0):
     """

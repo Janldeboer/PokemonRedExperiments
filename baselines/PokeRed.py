@@ -10,17 +10,17 @@ from skimage.transform import resize
 
 class PokeRed:
     STATS = { 
-        "X":                    { "address": 0xD362, "length": 1,   "type": "int",      "is_poke_stat": False,  "amount": 1 },
-        "Y":                    { "address": 0xD361, "length": 1,   "type": "int",      "is_poke_stat": False,  "amount": 1 },
-        "Map":                  { "address": 0xD35E, "length": 1,   "type": "int",      "is_poke_stat": False,  "amount": 1 },
-        "Party Count":          { "address": 0xD163, "length": 1,   "type": "int",      "is_poke_stat": False,  "amount": 1 },
-        "Badges":               { "address": 0xD356, "length": 1,   "type": "int",      "is_poke_stat": False,  "amount": 1 },
-        "Party":                { "address": 0xD164, "length": 1,   "type": "int",      "is_poke_stat": False,  "amount": 6 },
-        "Pokemon":              { "address": 0xD16B, "length": 1,   "type": "int",      "is_poke_stat": True,   "amount": 1 },
-        "HP":                   { "address": 0xD16C, "length": 2,   "type": "int",      "is_poke_stat": True,   "amount": 1 },
-        "Status":               { "address": 0xD16F, "length": 1,   "type": "int",      "is_poke_stat": True,   "amount": 1 },
-        "Type":                 { "address": 0xD170, "length": 1,   "type": "int",      "is_poke_stat": True,   "amount": 2 },
-        "Move":                 { "address": 0xD173, "length": 1,   "type": "int",      "is_poke_stat": True,   "amount": 4 },
+        "X":                    { "address": 0xD362, "length": 1,   "type": "int",      "is_poke_stat": False,  "amount": 1 }, #
+        "Y":                    { "address": 0xD361, "length": 1,   "type": "int",      "is_poke_stat": False,  "amount": 1 }, #
+        "Map":                  { "address": 0xD35E, "length": 1,   "type": "int",      "is_poke_stat": False,  "amount": 1 }, #
+        "Party Count":          { "address": 0xD163, "length": 1,   "type": "int",      "is_poke_stat": False,  "amount": 1 }, #?
+        "Badges":               { "address": 0xD356, "length": 1,   "type": "int",      "is_poke_stat": False,  "amount": 1 }, #
+        "Party":                { "address": 0xD164, "length": 1,   "type": "int",      "is_poke_stat": False,  "amount": 6 }, #?
+        "Pokemon":              { "address": 0xD16B, "length": 1,   "type": "int",      "is_poke_stat": True,   "amount": 1 }, #
+        "HP":                   { "address": 0xD16C, "length": 2,   "type": "int",      "is_poke_stat": True,   "amount": 1 }, #
+        "Status":               { "address": 0xD16F, "length": 1,   "type": "int",      "is_poke_stat": True,   "amount": 1 }, #
+        "Type":                 { "address": 0xD170, "length": 1,   "type": "int",      "is_poke_stat": True,   "amount": 2 }, #
+        "Move":                 { "address": 0xD173, "length": 1,   "type": "int",      "is_poke_stat": True,   "amount": 4 }, #?
         "XP":                   { "address": 0xD179, "length": 4,   "type": "int",      "is_poke_stat": True,   "amount": 1 },
         "HP EV":                { "address": 0xD17C, "length": 2,   "type": "int",      "is_poke_stat": True,   "amount": 1 },
         "Attack EV":            { "address": 0xD17E, "length": 2,   "type": "int",      "is_poke_stat": True,   "amount": 1 },
@@ -29,7 +29,7 @@ class PokeRed:
         "Special EV":           { "address": 0xD184, "length": 2,   "type": "int",      "is_poke_stat": True,   "amount": 1 },
         "Attack/Defense IV":    { "address": 0xD186, "length": 1,   "type": "int",      "is_poke_stat": True,   "amount": 1 },
         "Speed/Special IV":     { "address": 0xD187, "length": 1,   "type": "int",      "is_poke_stat": True,   "amount": 1 },
-        "PP":                   { "address": 0xD188, "length": 1,   "type": "int",      "is_poke_stat": True,   "amount": 4 },
+        "PP":                   { "address": 0xD188, "length": 1,   "type": "int",      "is_poke_stat": True,   "amount": 4 }, #?
         "Level":                { "address": 0xD18C, "length": 1,   "type": "int",      "is_poke_stat": True,   "amount": 1 },
         "Max HP":               { "address": 0xD18D, "length": 2,   "type": "int",      "is_poke_stat": True,   "amount": 1 },
         "Attack":               { "address": 0xD18F, "length": 2,   "type": "int",      "is_poke_stat": True,   "amount": 1 },
@@ -72,8 +72,6 @@ class PokeRed:
             hide_window=hide_window
         )
         
-        self.save_video = False
-        self.fast_video = True
         self.action_freq = 24
         self.tick_callback = tick_callback
         
@@ -87,23 +85,6 @@ class PokeRed:
             self.pyboy.load_state(f)
             print(f"Loaded state from {state_file}")
     
-    def plot_memory(self, memory):
-        memory_normalized = memory.astype(float) / 255
-        plt.imshow(memory_normalized)
-        #plt.show()
-        # also save to file
-        with open("memory.png", "wb") as f:
-            plt.savefig(f)
-            
-    def get_screen(self, resolution=None):
-        pixels = self.pyboy.botsupport_manager().screen().screen_ndarray()
-        if not resolution or resolution == pixels.shape[:2]:
-            return pixels
-        else: 
-            pixels = (255*resize(pixels, resolution, anti_aliasing=True)).astype(np.uint8)
-            self.plot_memory(pixels)
-            return pixels
-        
     def get_stat(self, info_name, pokemon_index=0, info_index=0, opponent=False):
         if not info_name in self.STATS:
             print(f"Error: {info_name} is not a valid stat")
@@ -126,6 +107,9 @@ class PokeRed:
         
         return self.read_multi_byte(stat_address, stat_length)
     
+    def get_screen(self):
+        return self.pyboy.botsupport_manager().screen().screen_ndarray()
+    
     def get_poke_info(self, info, info_index=0, opponent=False):
         if not info in self.STATS:
             print(f"Error: {info} is not a valid pokemon info")
@@ -145,6 +129,11 @@ class PokeRed:
             'badge': self.get_stat('Badges'),
         }
         return agent_stats
+    
+    def custom_stats_1(self):
+        """ Custom stat set for CnnPolicy:
+        For each of the players pokemon: HP, Level
+        """
     
     def get_all_stats(self):
         all_stats = {}
@@ -175,6 +164,11 @@ class PokeRed:
             self.pyboy.tick()
             if self.tick_callback:
                 self.tick_callback()
+                
+        stats = self.get_all_stats()
+        frame = self.get_screen()
+        return stats, frame
+        
     
     ## Memory reading wrappers
     
@@ -183,3 +177,14 @@ class PokeRed:
 
     def read_multi_byte(self, start_addr, length):
         return sum(self.read_m(start_addr + i) * 256 ** i for i in range(length))
+
+
+def poke_red_demo(gb_path, state_path):
+    poke_red = PokeRed(gb_path, state_path, head="headless")
+    stats = poke_red.get_all_stats()
+    print(json.dumps(stats, indent=4))
+
+if __name__ == "__main__":
+    poke_red_demo("../PokemonRed.gb", "../has_pokedex_nballs.state")
+    
+__all__ = ['PokeRed']

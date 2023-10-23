@@ -1,5 +1,0 @@
-graph TD
-    __init__ --> calls
-    __init__ --> length
-    reset --> calls
-    reset --> length

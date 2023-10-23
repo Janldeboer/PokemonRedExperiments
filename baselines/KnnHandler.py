@@ -13,7 +13,6 @@ class KnnHandler:
         self.vec_dim = vec_dim
         
         self.base_explore = 0
-        self.levels_satisfied = False
         self.sim_frame_dist = 2000000
         
         self.count = 0
@@ -30,13 +29,14 @@ class KnnHandler:
             print("adding first frame to knn index")
             return True
         else:
-            return self.knn_index.knn_query(vec, k = 1)[1][0] > self.sim_frame_dist
+            flat = vec.flatten().astype(np.float32)
+            return self.knn_index.knn_query(flat, k = 1)[1][0] > self.sim_frame_dist
         
     def update_frame_knn_index(self, frame_vec):
         if self.is_frame_novel(frame_vec):
             new_frame_id = self.count
             identifiers = np.array([new_frame_id])
-            self.knn_index.add_items(frame_vec, identifiers)
+            self.knn_index.add_items(frame_vec.flatten().astype(np.float32), identifiers)
             self.count += 1
             
     def number_of_frames(self):

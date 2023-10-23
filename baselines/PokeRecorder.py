@@ -14,6 +14,7 @@ class PokeRecorder:
         model_name = Path(f'{base_dir}/model_reset_{reset_count}_id{instance_id}').with_suffix('.mp4')
         self.full_recorder = VideoRecorder(full_name, (144, 160), renderFull)
         self.model_recorder = VideoRecorder(model_name, ml_res[:2], renderModel)
+        self.all_runs = []
         
     def add_video_frame(self):
         self.full_recorder.add_video_frame()

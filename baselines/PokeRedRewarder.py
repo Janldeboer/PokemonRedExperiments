@@ -24,6 +24,7 @@ class PokeRedRewarder:
             'badge': self.badge,
             'explore': self.knn_reward,
         }
+        rewards['total'] = sum([val for _, val in rewards.items()])
         return rewards
     
     def add_to_knn(self, frame_vec):
@@ -41,7 +42,7 @@ class PokeRedRewarder:
             
         self.total_reward = sum([val for _, val in self.get_rewards().items()])
         
-        return self.total_reward
+        return self.get_rewards()
         
 
     # def update_total_reward(self, hp_fraction):
