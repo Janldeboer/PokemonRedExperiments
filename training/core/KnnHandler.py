@@ -1,10 +1,5 @@
 import hnswlib
-import json
-import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-
-from pathlib import Path
 
 
 class KnnHandler:
@@ -54,7 +49,7 @@ class KnnHandler:
 
     """
     TODO: Check if this is still needed
-                
+
     def get_all_events_reward(self):
         # adds up all event flags, exclude museum ticket
         event_flags_start = 0xD747

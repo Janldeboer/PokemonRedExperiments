@@ -1,16 +1,17 @@
+from RedGymEnv import RedGymEnv, make_env
+import sys
+import uuid
+from datetime import datetime
 from os.path import exists
 from pathlib import Path
-import uuid
-import sys
+
 from stable_baselines3 import A2C, PPO
 from stable_baselines3.common import env_checker
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
-from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.callbacks import CheckpointCallback
-from datetime import datetime
+from stable_baselines3.common.utils import set_random_seed
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 
 sys.path.append("../core")
-from RedGymEnv import RedGymEnv, make_env
 
 
 def get_timestamp():
@@ -42,7 +43,7 @@ if __name__ == "__main__":
     )()  # SubprocVecEnv([make_env(i, env_config) for i in range(num_cpu)])
 
     # env_checker.check_env(env)
-    file_name = "nope"  #'baselines/session_b30478f4/poke_49741824_past_gym1'
+    file_name = "nope"  # 'baselines/session_b30478f4/poke_49741824_past_gym1'
     print(f"file_name: {file_name}.zip")
     if exists(file_name + ".zip"):
         print("\nloading checkpoint")
@@ -72,7 +73,7 @@ if __name__ == "__main__":
         try:
             with open("agent_enabled.txt", "r") as f:
                 agent_enabled = f.readlines()[0].startswith("yes")
-        except:
+        except BaseException:
             agent_enabled = False
         if agent_enabled:
             action, _states = model.predict(obs, deterministic=False)

@@ -1,12 +1,7 @@
-import argparse
 import json
+
 from pyboy import PyBoy
 from pyboy.utils import WindowEvent
-import numpy as np
-import matplotlib.pyplot as plt
-
-
-from skimage.transform import resize
 
 
 class PokeRed:
@@ -256,7 +251,7 @@ class PokeRed:
             print(f"Loaded state from {state_file}")
 
     def get_stat(self, info_name, pokemon_index=0, info_index=0, opponent=False):
-        if not info_name in self.STATS:
+        if info_name not in self.STATS:
             print(f"Error: {info_name} is not a valid stat")
             return None
 
@@ -285,7 +280,7 @@ class PokeRed:
         return self.pyboy.botsupport_manager().screen().screen_ndarray()
 
     def get_poke_info(self, info, info_index=0, opponent=False):
-        if not info in self.STATS:
+        if info not in self.STATS:
             print(f"Error: {info} is not a valid pokemon info")
             return None
         return [
@@ -327,9 +322,8 @@ class PokeRed:
             else:
                 all_stats[stat] = self.get_stat(stat)
 
-        all_stats[
-            "Relative HP"
-        ] = self.read_hp_fraction()  # TODO: remove this, but it's still used a lot
+        # TODO: remove this, but it's still used a lot
+        all_stats["Relative HP"] = self.read_hp_fraction()
 
         return all_stats
 
@@ -353,7 +347,7 @@ class PokeRed:
         frame = self.get_screen()
         return stats, frame
 
-    ## Memory reading wrappers
+    # Memory reading wrappers
 
     def read_m(self, addr):
         return self.pyboy.get_memory_value(addr)

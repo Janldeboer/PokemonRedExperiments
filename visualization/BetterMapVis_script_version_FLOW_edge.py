@@ -1,17 +1,18 @@
-import pandas as pd
-from pathlib import Path
-import matplotlib
-import seaborn
-import matplotlib.pyplot as plt
-from PIL import Image
-from einops import rearrange
-from multiprocessing import Pool
 import io
 import json
 import math
-from tqdm import tqdm
+from multiprocessing import Pool
+from pathlib import Path
+
+import matplotlib
+import matplotlib.pyplot as plt
 import mediapy as media
 import numpy as np
+import pandas as pd
+import seaborn
+from einops import rearrange
+from PIL import Image
+from tqdm import tqdm
 
 
 def make_all_coords_arrays(filtered_dfs):
@@ -59,7 +60,8 @@ def game_coord_to_global_coord(x, y, map_idx):
         52: np.array([-10, 189]),  # Pewter Museum (floor 1)
         53: np.array([-10, 198]),  # Pewter Museum (floor 2)
         54: np.array([-21, 169]),  # Pokémon Gym (Pewter City)
-        55: np.array([-19, 177]),  # House with disobedient Nidoran♂ (Pewter City)
+        # House with disobedient Nidoran♂ (Pewter City)
+        55: np.array([-19, 177]),
         56: np.array([-30, 163]),  # Poké Mart (Pewter City)
         57: np.array([-19, 177]),  # House with two Trainers (Pewter City)
         58: np.array([-25, 154]),  # Pokémon Center (Pewter City)
@@ -252,8 +254,8 @@ def render_arrows(fname, all_flows, arrow_sprite):
         cols.append(mag)
     print("rendering")
     ax.quiver(
-        [k[0] for k in all_flows.keys()], 
-        [k[1] for k in all_flows.keys()], 
+        [k[0] for k in all_flows.keys()],
+        [k[1] for k in all_flows.keys()],
         u, v,
         cols
     )
@@ -273,7 +275,8 @@ def compute_flow_wrap(dat):
 
 
 if __name__ == "__main__":
-    run_dir = Path("baselines/session_4da05e87")  # Path('baselines/session_ebdfe818')
+    # Path('baselines/session_ebdfe818')
+    run_dir = Path("baselines/session_4da05e87")
     # original session_e41c9eff, main session_4da05e87, extra session_e1b6d2dc
 
     coords_save_pth = Path("base_coords.npz")

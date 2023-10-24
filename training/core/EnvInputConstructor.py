@@ -1,14 +1,10 @@
 from math import floor
 
 import numpy as np
-
-from skimage.transform import resize
-
 from ConfigToAttr import apply_dict_as_attributes
-
 from gymnasium import spaces
-
 from PokeRed import PokeRed
+from skimage.transform import resize
 
 
 class EnvInputConstructor:

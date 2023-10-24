@@ -1,9 +1,9 @@
+import torch
 import torch.nn as nn
+from stable_baselines3 import PPO
 
 # from stable_baselines3.common.policies import register_policy
 from stable_baselines3.common.torch_layers import NatureCNN
-from stable_baselines3 import PPO
-import torch
 
 
 class PokePolicy(nn.Module):
@@ -14,7 +14,8 @@ class PokePolicy(nn.Module):
         self.features_extractor = NatureCNN(observation_space, features_dim)
 
         # Define the embedding layer for Pokemon types
-        self.embedding = nn.Embedding(152, 10)  # 152 types, 10-dimensional embedding
+        # 152 types, 10-dimensional embedding
+        self.embedding = nn.Embedding(152, 10)
 
         # Fully connected layer to combine features
         self.fc_combined = nn.Linear(

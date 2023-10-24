@@ -1,20 +1,21 @@
-import pandas as pd
-from pathlib import Path
-from colorcet.plotting import swatch, swatches
-import holoviews as hv
-
-hv.extension("matplotlib")
-from matplotlib.cm import get_cmap
-import matplotlib.pyplot as plt
+from tqdm import tqdm
 from PIL import Image
+from matplotlib.cm import get_cmap
 from einops import rearrange
 import requests
-from multiprocessing import Pool
-import io
-import json
-from tqdm import tqdm
-import mediapy as media
 import numpy as np
+import mediapy as media
+import matplotlib.pyplot as plt
+from multiprocessing import Pool
+import json
+import io
+from pathlib import Path
+
+import holoviews as hv
+import pandas as pd
+from colorcet.plotting import swatch, swatches
+
+hv.extension("matplotlib")
 
 
 def make_all_coords_arrays(filtered_dfs):
@@ -67,7 +68,8 @@ def game_coord_to_pixel_coord(x, y, map_idx, base_y):
         52: np.array([-10, 189]),  # Pewter Museum (floor 1)
         53: np.array([-10, 198]),  # Pewter Museum (floor 2)
         54: np.array([-21, 169]),  # Pokémon Gym (Pewter City)
-        55: np.array([-19, 177]),  # House with disobedient Nidoran♂ (Pewter City)
+        # House with disobedient Nidoran♂ (Pewter City)
+        55: np.array([-19, 177]),
         56: np.array([-30, 163]),  # Poké Mart (Pewter City)
         57: np.array([-19, 177]),  # House with two Trainers (Pewter City)
         58: np.array([-25, 154]),  # Pokémon Center (Pewter City)

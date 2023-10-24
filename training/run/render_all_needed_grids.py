@@ -1,13 +1,14 @@
-from os.path import exists
-from pathlib import Path
 import sys
 import uuid
+from os.path import exists
+from pathlib import Path
+
 from red_gym_env import RedGymEnv
 from stable_baselines3 import A2C, PPO
 from stable_baselines3.common import env_checker
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
-from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.callbacks import CheckpointCallback
+from stable_baselines3.common.utils import set_random_seed
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 
 
 def make_env(rank, env_conf, seed=0):

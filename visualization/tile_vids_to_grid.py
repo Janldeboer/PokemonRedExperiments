@@ -1,10 +1,11 @@
-import sys
 import stat
 import subprocess
+import sys
 from pathlib import Path
 
 # inspired by https://www.jimby.name/techbits/recent/xstack/
-# and https://trac.ffmpeg.org/wiki/Create%20a%20mosaic%20out%20of%20several%20input%20videos%20using%20xstack
+# and
+# https://trac.ffmpeg.org/wiki/Create%20a%20mosaic%20out%20of%20several%20input%20videos%20using%20xstack
 
 
 def run_ffmpeg_grid(

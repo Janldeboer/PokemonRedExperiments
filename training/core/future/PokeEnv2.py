@@ -1,7 +1,6 @@
 from math import floor
 
 import numpy as np
-
 from skimage.transform import resize
 
 

@@ -1,5 +1,6 @@
-from KnnHandler import KnnHandler
 from math import prod
+
+from KnnHandler import KnnHandler
 
 
 class PokeRedRewarder:

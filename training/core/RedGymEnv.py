@@ -1,13 +1,12 @@
 import json
 import uuid
-from gymnasium import Env
-from PokeRedRewarder import PokeRedRewarder
-from PokeRed import PokeRed
-
-from EnvInputConstructor import EnvInputConstructor
-from stable_baselines3.common.utils import set_random_seed
 
 from ConfigToAttr import apply_dict_as_attributes
+from EnvInputConstructor import EnvInputConstructor
+from gymnasium import Env
+from PokeRed import PokeRed
+from PokeRedRewarder import PokeRedRewarder
+from stable_baselines3.common.utils import set_random_seed
 
 DEFAULTS_PATH = "./default_config.json"
 
