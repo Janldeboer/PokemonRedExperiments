@@ -1,4 +1,3 @@
-from RedGymEnv import RedGymEnv, make_env
 import sys
 import uuid
 from datetime import datetime
@@ -12,6 +11,7 @@ from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 
 sys.path.append("../core")
+from RedGymEnv import RedGymEnv, make_env
 
 
 def get_timestamp():

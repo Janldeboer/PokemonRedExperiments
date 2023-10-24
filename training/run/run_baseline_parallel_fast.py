@@ -1,4 +1,3 @@
-from RedGymEnv import RedGymEnv, make_env
 import uuid
 from os.path import exists
 from pathlib import Path
@@ -10,6 +9,7 @@ from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 
 sys.path.append("../core")
+from RedGymEnv import RedGymEnv, make_env
 
 
 def main():

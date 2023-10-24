@@ -2,7 +2,9 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from red_gym_env import RedGymEnv
+
+sys.path.append("../core")
+from RedGymEnv import RedGymEnv
 
 
 def run_recorded_actions_on_emulator_and_save_video(sess_id, instance_id, run_index):
