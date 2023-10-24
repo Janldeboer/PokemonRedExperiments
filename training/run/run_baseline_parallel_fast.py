@@ -1,12 +1,14 @@
 from os.path import exists
 from pathlib import Path
 import uuid
-from red_gym_env import RedGymEnv, make_env
 from stable_baselines3 import A2C, PPO
 from stable_baselines3.common import env_checker
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.callbacks import CheckpointCallback
+
+sys.path.append('../core')
+from RedGymEnv import RedGymEnv, make_env
 
 def main():
     ep_length = 2048 * 8
@@ -17,9 +19,9 @@ def main():
 
     env_config = {
                 'headless': True, 'save_final_state': True, 'early_stop': False,
-                'action_freq': 24, 'init_state': '../has_pokedex_nballs.state', 'max_steps': ep_length, 
+                'action_freq': 24, 'init_state': '../../states/has_pokedex_nballs.state', 'max_steps': ep_length, 
                 'print_rewards': True, 'save_video': False, 'fast_video': True, 'session_path': sess_path,
-                'gb_path': '../PokemonRed.gb', 'debug': False, 'sim_frame_dist': 2_000_000.0, 
+                'gb_path': '../../PokemonRed.gb', 'debug': False, 'sim_frame_dist': 2_000_000.0, 
                 'use_screen_explore': False, 'reward_scale': 4, 'extra_buttons': False,
                 'explore_weight': 3, # 2.5,
                 'frame_stacks': 1,
