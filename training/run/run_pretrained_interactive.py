@@ -30,7 +30,7 @@ def get_timestamp():
 
 if __name__ == '__main__':
 
-    sess_path = f'new_sessions/new_session_{get_timestamp()}__{str(uuid.uuid4())[:8]}'
+    sess_path = f'sessions/new_session_{get_timestamp()}__{str(uuid.uuid4())[:8]}'
     sess_path = Path(sess_path)
     ep_length = 2**16
 
