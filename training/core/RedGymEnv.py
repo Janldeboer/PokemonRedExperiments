@@ -4,9 +4,11 @@ import uuid
 from ConfigToAttr import apply_dict_as_attributes
 from EnvInputConstructor import EnvInputConstructor
 from gymnasium import Env
+from pathlib import Path
 from PokeRed import PokeRed
 from PokeRedRewarder import PokeRedRewarder
 from stable_baselines3.common.utils import set_random_seed
+from future.PokeRecorder import ScreenshotRecorder
 
 DEFAULTS_PATH = "./default_config.json"
 
@@ -23,6 +25,8 @@ class RedGymEnv(Env):
         )
         self.poke_rewarder = PokeRedRewarder()
         self.env_input_constructor = EnvInputConstructor()
+        self.game_recorder = ScreenshotRecorder(self.session_path / Path("game"), skip=99)
+        self.ml_recorder = ScreenshotRecorder(self.session_path / Path("ml"), skip=99)
 
         apply_dict_as_attributes(self, EnvInputConstructor.ENV_CONFIG)
 
@@ -61,6 +65,10 @@ class RedGymEnv(Env):
         observation = self.env_input_constructor.render_for_ml(stats, frame, rewards)
 
         step_limit_reached = self.increase_step_count()
+        
+        image_note = f"s{self.step_count}_r{rewards['total']}_a{action}"
+        self.game_recorder.add(frame, note=image_note)
+        self.ml_recorder.add(observation, note=image_note)
 
         return observation, rewards["total"] * 0.1, False, step_limit_reached, {}
 

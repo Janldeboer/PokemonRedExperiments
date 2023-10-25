@@ -17,7 +17,7 @@ class PokeRed:
         WindowEvent.PRESS_ARROW_UP,
         WindowEvent.PRESS_BUTTON_A,
         WindowEvent.PRESS_BUTTON_B,
-        WindowEvent.PRESS_BUTTON_START,
+#        WindowEvent.PRESS_BUTTON_START,
         WindowEvent.PASS,
     ]
 
@@ -28,7 +28,7 @@ class PokeRed:
         WindowEvent.RELEASE_ARROW_UP,
         WindowEvent.RELEASE_BUTTON_A,
         WindowEvent.RELEASE_BUTTON_B,
-        WindowEvent.RELEASE_BUTTON_START,
+#        WindowEvent.RELEASE_BUTTON_START,
     ]
 
     def __init__(
@@ -151,7 +151,7 @@ class PokeRed:
         # press button then release after some steps
         self.pyboy.send_input(self.VALID_ACTIONS[action])
         for i in range(self.action_freq):
-            if i == 8 and action < 7:
+            if i == 8 and action < len(self.VALID_ACTIONS) - 1:
                 self.pyboy.send_input(self.RELEASE_ACTIONS[action])
             self.pyboy.tick()
             if self.tick_callback:

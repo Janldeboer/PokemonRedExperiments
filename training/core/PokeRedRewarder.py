@@ -1,11 +1,14 @@
 from math import prod
+import numpy as np
 
 from KnnHandler import KnnHandler
+from skimage.transform import resize
 
 
 class PokeRedRewarder:
     def __init__(self):
         self.max_level_rew = 0
+        self.max_xp_rew = 0
         self.died_count = 0
         self.hp_fraction = 1
         self.badge = 0
@@ -18,27 +21,33 @@ class PokeRedRewarder:
 
     def get_rewards(self):
         rewards = {
-            "level": self.max_level_rew,
+            "level": 2*self.max_level_rew - 12,
             "dead": -0.1 * self.died_count,
-            "Relative HP": self.hp_fraction,
-            "badge": self.badge,
-            "explore": self.knn_reward,
+            "xp": self.max_xp_rew * 0.0_000_001,
+            "Relative HP": min(1, 2 *self.hp_fraction),
+            "badge": 20*self.badge,
+            "explore": 0.02 * self.knn_reward,
         }
         rewards["total"] = sum([val for _, val in rewards.items()])
         return rewards
 
     def add_to_knn(self, frame_vec):
+        scaled = (255 * resize(frame_vec, (36,40), anti_aliasing=True)).astype(np.uint8)
+        scaled = scaled[:, :, :1]
         if not self.knn_handler:
-            self.knn_handler = KnnHandler(vec_dim=prod(frame_vec.shape))
-        self.knn_handler.update_frame_knn_index(frame_vec)
+            print("Creating new knn handler")
+            self.knn_handler = KnnHandler(vec_dim=prod(scaled.shape))
+        self.knn_handler.update_frame_knn_index(scaled)
 
     def update_rewards(self, new_stats, new_frame):
+        
+    
         self.max_level_rew = max(self.max_level_rew, sum(new_stats["Level"]))
+        self.max_xp_rew = max(self.max_xp_rew, sum(new_stats["XP"]))
         self.badge = new_stats["Badges"]
         self.hp_fraction = new_stats["Relative HP"]
-        self.knn_reward = self.knn_handler.count if self.knn_handler else 0
-
         self.add_to_knn(new_frame)
+        self.knn_reward = self.knn_handler.count if self.knn_handler else 0
 
         self.total_reward = sum([val for _, val in self.get_rewards().items()])
 

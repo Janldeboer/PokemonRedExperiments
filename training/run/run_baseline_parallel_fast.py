@@ -12,9 +12,13 @@ from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 sys.path.append("../core")
 from RedGymEnv import RedGymEnv, make_env
 
+from datetime import datetime
+
+set_random_seed(datetime.now().microsecond)
+
 
 def main():
-    ep_length = 2048 * 8
+    ep_length = 2048 * 10
     session_id = str(uuid.uuid4())
     sess_path = Path(f"session_{session_id[:8]}")
 
@@ -50,7 +54,7 @@ def main():
         save_freq=ep_length, save_path=sess_path, name_prefix="poke"
     )
     # env_checker.check_env(env)
-    learn_steps = 10
+    learn_steps = 40
     # put a checkpoint here you want to start from
     file_name = "nope"  # demo_session/poke_439746560_steps'
 
@@ -69,8 +73,8 @@ def main():
             env,
             verbose=1,
             n_steps=ep_length // 8,
-            batch_size=128,
-            n_epochs=3,
+            batch_size=256,
+            n_epochs=5,
             gamma=0.998,
         )
 

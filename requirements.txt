@@ -38,7 +38,7 @@ lazy_loader==0.2
 MarkupSafe==2.1.3
 matplotlib==3.7.1
 matplotlib-inline==0.1.6
-mediapy @ git+https://github.com/PWhiddy/mediapy.git@45101800d4f6adeffe814cad93de1db67c1bd614
+mediapy
 mistune==3.0.1
 ml-dtypes==0.2.0
 mpmath==1.3.0

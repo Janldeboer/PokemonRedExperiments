@@ -1,10 +1,56 @@
 import json
+import os
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import mediapy as media
+import numpy as np
 
+class Recorder:
+    def __init__(self, path, format='gif', fps=1): # Format can be gif, png, mp4
+        self.path = path
+        self.format = format
+        self.fps = fps
+        if not format in ['gif', 'png', 'mp4']:
+            raise ValueError(f'Format {format} not supported')
+        
+        self.setup()
+    
+    def setup(self):
+        if self.format == 'gif':
+            self.writer = media.GIFWriter(self.path, fps=self.fps)
+        elif self.format == 'png':
+            self.writer = media.ImageWriter(self.path)
+        elif self.format == 'mp4':
+            self.writer = media.VideoWriter(self.path, fps=self.fps)
+        self.writer.__enter__()
+        
+class ScreenshotRecorder():
+    def __init__(self, path, skip=0):
+        self.path = path
+        if not type(self.path) == Path:
+            self.path = Path(self.path)
+        self.path.mkdir(exist_ok=True)
+        self.count = 0
+        self.skip = skip
+        self.skipped = 0
+        
+    def add(self, frame, note=None):
+        self.count += 1
+        if self.skipped < self.skip:
+            self.skipped += 1
+            return
+        self.skipped = 0
+        
+        note = "_" + note if note else ''
+        filename = f"frame{self.count}{note}.png"
 
+        
+        if frame.shape[2] == 1:
+            frame = np.repeat(frame, 3, axis=2)
+        
+        plt.imsave(self.path / Path(filename), frame) 
+            
 class PokeRecorder:
     def __init__(
         self, session_path, instance_id, ml_res, renderFull, renderModel, reset_count=0
@@ -62,14 +108,14 @@ class PokeRecorder:
                 plt.imsave(
                     fsession_path
                     / Path(
-                        f"frame_r{self.total_reward:.4f}_{self.reset_count}_small.jpeg"
+                        f"frame_r{self.total_reward:.4f}_{self.reset_count}_small.png"
                     ),
                     obs_memory,
                 )
                 plt.imsave(
                     fsession_path
                     / Path(
-                        f"frame_r{self.total_reward:.4f}_{self.reset_count}_full.jpeg"
+                        f"frame_r{self.total_reward:.4f}_{self.reset_count}_full.png"
                     ),
                     self.render(reduce_res=False),
                 )

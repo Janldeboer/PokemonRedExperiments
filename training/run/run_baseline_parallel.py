@@ -15,7 +15,7 @@ from RedGymEnv import RedGymEnv, make_env
 
 def main():
     ep_length = 2048 * 8
-    sess_path = Path(f"session_{str(uuid.uuid4())[:8]}")
+    sess_path = Path(f"sessions/session_{str(uuid.uuid4())[:8]}")
 
     env_config = {
         "headless": True,
@@ -37,7 +37,7 @@ def main():
     # env_checker.check_env(env)
     learn_steps = 40
     # 'session_e41c9eff/poke_250871808_steps'
-    file_name = "session_4da05e87_main_good/poke_439746560_steps"
+    file_name = "nope" # session_4da05e87_main_good/poke_439746560_steps"
 
     # 'session_bfdca25a/poke_42532864_steps' #'session_d3033abb/poke_47579136_steps' #'session_a17cc1f5/poke_33546240_steps' #'session_e4bdca71/poke_8945664_steps' #'session_eb21989e/poke_40255488_steps' #'session_80f70ab4/poke_58982400_steps'
     if exists(file_name + ".zip"):
