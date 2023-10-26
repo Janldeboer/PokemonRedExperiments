@@ -21,7 +21,7 @@ class PokeRedRewarder:
 
     def get_rewards(self):
         rewards = {
-            "level": 2*self.max_level_rew - 12,
+            "level": self.get_levels_reward(),
             "dead": -0.1 * self.died_count,
             "xp": self.max_xp_rew * 0.0_000_001,
             "Relative HP": min(1, 2 *self.hp_fraction),
@@ -40,8 +40,6 @@ class PokeRedRewarder:
         self.knn_handler.update_frame_knn_index(scaled)
 
     def update_rewards(self, new_stats, new_frame):
-        
-    
         self.max_level_rew = max(self.max_level_rew, sum(new_stats["Level"]))
         self.max_xp_rew = max(self.max_xp_rew, sum(new_stats["XP"]))
         self.badge = new_stats["Badges"]
@@ -52,6 +50,16 @@ class PokeRedRewarder:
         self.total_reward = sum([val for _, val in self.get_rewards().items()])
 
         return self.get_rewards()
+    
+    def get_levels_reward(self):
+        explore_thresh = 22
+        scale_factor = 4
+        level_sum = self.max_level_rew
+        if level_sum < explore_thresh:
+            scaled = level_sum
+        else:
+            scaled = (level_sum-explore_thresh) / scale_factor + explore_thresh
+        return scaled
 
     # def update_total_reward(self, hp_fraction):
     #     self.update_rewards({"hp": hp_fraction})
