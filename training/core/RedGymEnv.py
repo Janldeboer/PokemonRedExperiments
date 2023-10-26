@@ -49,6 +49,7 @@ class RedGymEnv(Env):
         # (re)start game, skipping credits
         self.poke_red.load_from_state(self.init_state)
         self.poke_rewarder.reset()
+        self.last_total_reward = 0
         self.step_count = 0
 
         # getting first observation
@@ -63,6 +64,9 @@ class RedGymEnv(Env):
         stats, frame = self.poke_red.run_action_on_emulator(action)
         rewards = self.poke_rewarder.update_rewards(stats, frame)
         observation = self.env_input_constructor.render_for_ml(stats, frame, rewards)
+        
+        reward_for_step = self.last_total_reward - rewards["total"]
+        self.last_total_reward = rewards["total"]
 
         step_limit_reached = self.increase_step_count()
         
@@ -70,7 +74,7 @@ class RedGymEnv(Env):
         self.game_recorder.add(frame, note=image_note)
         self.ml_recorder.add(observation, note=image_note)
 
-        return observation, rewards["total"] * 0.1, False, step_limit_reached, {}
+        return observation, reward_for_step * 0.1, False, step_limit_reached, {}
 
     def increase_step_count(self):
         """Increase the step count by 1  and returns if the step limit has been reached."""
