@@ -4,7 +4,7 @@ import numpy as np
 
 class KnnHandler:
     def __init__(self, num_elements=20000, vec_dim=4320, sim_frame_dist=2000000):
-        print(f"Creating knn index with {num_elements} elements, {vec_dim} dimensions")
+        #print(f"Creating knn index with {num_elements} elements, {vec_dim} dimensions")
         self.num_elements = num_elements
         self.vec_dim = vec_dim
 
@@ -24,7 +24,7 @@ class KnnHandler:
 
     def is_frame_novel(self, vec):
         if self.count == 0:
-            print("adding first frame to knn index")
+            #print("adding first frame to knn index")
             return True
         else:
             flat = vec.flatten().astype(np.float32)

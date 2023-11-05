@@ -29,7 +29,8 @@ class EnvInputConstructor:
         )
 
     def render_for_ml(self, stats, frame, last_rewards):
-        print(f"Last Rewards: {last_rewards}", flush=True)
+        formatted_rewards = {k: f"{v:3.2f}" if (isinstance(v, float) or isinstance(v, int)) else v for k, v in last_rewards.items()}
+        #print(f"Last Rewards: {formatted_rewards}", flush=True)
         rendered_frame = self.scale_frame(frame)
         rendered_infobars = self.get_infobars(last_rewards)
         full_ml_image = np.concatenate(

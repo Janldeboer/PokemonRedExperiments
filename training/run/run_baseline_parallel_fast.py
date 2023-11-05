@@ -9,6 +9,8 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 
+from datetime import datetime
+
 sys.path.append("../core")
 from RedGymEnv import RedGymEnv, make_env
 
@@ -16,11 +18,13 @@ from datetime import datetime
 
 set_random_seed(datetime.now().microsecond)
 
+def get_timestamp():
+    return datetime.now().strftime("%Y%m%d-%H%M%S")
 
 def main():
-    ep_length = 2048 * 10
+    ep_length = 2 ** 12 # = 
     session_id = str(uuid.uuid4())
-    sess_path = Path(f"session_{session_id[:8]}")
+    sess_path = Path(f"sessions/session_{get_timestamp()}_{session_id[:8]}")
 
     print(f"Session id: {session_id[:8]}")
 
@@ -49,14 +53,16 @@ def main():
 
     num_cpu = 4  # Also sets the number of episodes per training iteration
     env = SubprocVecEnv([make_env(i, env_config) for i in range(num_cpu)])
+    
+    models_path = Path(f"{sess_path}/models")
 
     checkpoint_callback = CheckpointCallback(
-        save_freq=ep_length, save_path=sess_path, name_prefix="poke"
+        save_freq=max(ep_length/4,2**10), save_path=models_path, name_prefix="poke"
     )
     # env_checker.check_env(env)
-    learn_steps = 40
+    learn_steps = 100
     # put a checkpoint here you want to start from
-    file_name = "nope"  # demo_session/poke_439746560_steps'
+    file_name = "first_full_run"  # demo_session/poke_439746560_steps'
 
     if exists(file_name + ".zip"):
         print("\nloading checkpoint")
@@ -72,15 +78,17 @@ def main():
             "CnnPolicy",
             env,
             verbose=1,
-            n_steps=ep_length // 8,
+            n_steps=ep_length,
             batch_size=256,
             n_epochs=5,
             gamma=0.998,
         )
+        
+    models_path = Path(f"{sess_path}/models")
+    models_path.mkdir(exist_ok=True)
 
     for i in range(learn_steps):
         model.learn(total_timesteps=69, callback=checkpoint_callback)
-
 
 if __name__ == "__main__":
     main()

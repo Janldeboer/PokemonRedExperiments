@@ -54,7 +54,8 @@ class PokeRed:
         self.action_freq = 24
         self.tick_callback = tick_callback
 
-        self.pyboy.set_emulation_speed(0 if head == "headless" else 6)
+        if not head == "headless":
+            self.pyboy.set_emulation_speed(6)
 
         if state_file:
             self.load_from_state(state_file)
@@ -62,7 +63,7 @@ class PokeRed:
     def load_from_state(self, state_file):
         with open(state_file, "rb") as f:
             self.pyboy.load_state(f)
-            print(f"Loaded state from {state_file}")
+            #print(f"Loaded state from {state_file}")
 
     def get_stat(self, info_name, pokemon_index=0, info_index=0, opponent=False):
         if info_name not in self.STATS:

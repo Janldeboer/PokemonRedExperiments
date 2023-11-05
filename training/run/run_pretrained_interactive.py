@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     env_config = {
         "gb_path": "../../PokemonRed.gb",
-        "init_state": "../../states/has_pokedex.state",
+        "init_state": "../../states/has_pokedex_nballs.state",
         "headless": False,
         "early_stop": False,
         "max_steps": ep_length,
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     )()  # SubprocVecEnv([make_env(i, env_config) for i in range(num_cpu)])
 
     # env_checker.check_env(env)
-    file_name = "nope"  # 'baselines/session_b30478f4/poke_49741824_past_gym1'
+    file_name = "2nd_Run"  # 'baselines/session_b30478f4/poke_49741824_past_gym1'
     print(f"file_name: {file_name}.zip")
     if exists(file_name + ".zip"):
         print("\nloading checkpoint")

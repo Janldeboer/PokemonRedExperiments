@@ -7,6 +7,9 @@ from skimage.transform import resize
 
 class PokeRedRewarder:
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.max_level_rew = 0
         self.max_xp_rew = 0
         self.died_count = 0
@@ -15,18 +18,20 @@ class PokeRedRewarder:
         self.knn_reward = 0
         self.total_reward = 1
         self.knn_handler = None
-
-    def reset(self):
-        self.knn_handler = None
+        self.knn_handler_cords = None
+        self.maps = set()
+        
 
     def get_rewards(self):
         rewards = {
-            "level": self.get_levels_reward(),
+            "level": self.get_levels_reward() - 6,
             "dead": -0.1 * self.died_count,
-            "xp": self.max_xp_rew * 0.0_000_001,
-            "Relative HP": min(1, 2 *self.hp_fraction),
+            "xp": self.max_xp_rew * 0.0_000_001 - 1.32,
+            "Relative HP": min(1, 2 *self.hp_fraction) - 1,
             "badge": 20*self.badge,
             "explore": 0.02 * self.knn_reward,
+            "explore2": 0.02 * self.cords_reward,
+            "maps": len(self.maps) - 1,
         }
         rewards["total"] = sum([val for _, val in rewards.items()])
         return rewards
@@ -35,9 +40,16 @@ class PokeRedRewarder:
         scaled = (255 * resize(frame_vec, (36,40), anti_aliasing=True)).astype(np.uint8)
         scaled = scaled[:, :, :1]
         if not self.knn_handler:
-            print("Creating new knn handler")
+            #print("Creating new knn handler")
             self.knn_handler = KnnHandler(vec_dim=prod(scaled.shape))
         self.knn_handler.update_frame_knn_index(scaled)
+        
+    def add_to_cords_knn(self, x, y, map_id):
+        vec = np.array([x, y, map_id * 1000])
+        if not self.knn_handler_cords:
+            #print("Creating new knn handler")
+            self.knn_handler_cords = KnnHandler(vec_dim=3, sim_frame_dist=4)
+        self.knn_handler_cords.update_frame_knn_index(vec)
 
     def update_rewards(self, new_stats, new_frame):
         self.max_level_rew = max(self.max_level_rew, sum(new_stats["Level"]))
@@ -45,8 +57,13 @@ class PokeRedRewarder:
         self.badge = new_stats["Badges"]
         self.hp_fraction = new_stats["Relative HP"]
         self.add_to_knn(new_frame)
+        self.add_to_cords_knn(new_stats["X"], new_stats["Y"], new_stats["Map"])
         self.knn_reward = self.knn_handler.count if self.knn_handler else 0
-
+        self.cords_reward = self.knn_handler_cords.count if self.knn_handler_cords else 0
+        
+        if not new_stats["Map"] in self.maps:
+            self.maps.add(new_stats["Map"])
+            
         self.total_reward = sum([val for _, val in self.get_rewards().items()])
 
         return self.get_rewards()

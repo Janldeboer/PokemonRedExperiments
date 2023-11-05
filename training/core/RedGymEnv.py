@@ -9,6 +9,7 @@ from PokeRed import PokeRed
 from PokeRedRewarder import PokeRedRewarder
 from stable_baselines3.common.utils import set_random_seed
 from future.PokeRecorder import ScreenshotRecorder
+from datetime import datetime
 
 DEFAULTS_PATH = "./default_config.json"
 
@@ -25,8 +26,8 @@ class RedGymEnv(Env):
         )
         self.poke_rewarder = PokeRedRewarder()
         self.env_input_constructor = EnvInputConstructor()
-        self.game_recorder = ScreenshotRecorder(self.session_path / Path("game"), skip=99)
-        self.ml_recorder = ScreenshotRecorder(self.session_path / Path("ml"), skip=99)
+        self.game_recorder = ScreenshotRecorder(self.session_path / Path("game"), skip=255)
+        self.ml_recorder = ScreenshotRecorder(self.session_path / Path("ml"), skip=255)
 
         apply_dict_as_attributes(self, EnvInputConstructor.ENV_CONFIG)
 
@@ -43,9 +44,11 @@ class RedGymEnv(Env):
         )
         self.session_path.mkdir(exist_ok=True)
         self.head = "headless" if self.headless else "SDL2"
+    
 
     def reset(self, seed=None):
-        self.seed = seed
+        self.seed = seed if seed else datetime.now().microsecond
+        
         # (re)start game, skipping credits
         self.poke_red.load_from_state(self.init_state)
         self.poke_rewarder.reset()
@@ -63,18 +66,28 @@ class RedGymEnv(Env):
     def step(self, action):
         stats, frame = self.poke_red.run_action_on_emulator(action)
         rewards = self.poke_rewarder.update_rewards(stats, frame)
-        observation = self.env_input_constructor.render_for_ml(stats, frame, rewards)
+        observation = self.env_input_constructor.render_for_ml(stats, frame, rewards) 
         
-        reward_for_step = self.last_total_reward - rewards["total"]
+        reward_for_step = rewards["total"] - self.last_total_reward
         self.last_total_reward = rewards["total"]
 
         step_limit_reached = self.increase_step_count()
         
-        image_note = f"s{self.step_count}_r{rewards['total']}_a{action}"
+        image_note = f"cpu{self.rank}_s{self.step_count}_r{rewards['total']:4f}_a{action}"
         self.game_recorder.add(frame, note=image_note)
         self.ml_recorder.add(observation, note=image_note)
-
-        return observation, reward_for_step * 0.1, False, step_limit_reached, {}
+        
+        if reward_for_step < 0 or reward_for_step > 1:
+            print(f"Reward for step: {reward_for_step:4f}")
+            
+        """
+        if reward_for_step < 0 and self.last_total_reward < 20:
+            # No negative rewards in the beginning, no penalty for loosing health or dying
+            # We dont want AI to avoid that and be scared of fighting
+            reward_for_step = 0
+        """
+            
+        return observation, reward_for_step, False, step_limit_reached, {}
 
     def increase_step_count(self):
         """Increase the step count by 1  and returns if the step limit has been reached."""
@@ -88,10 +101,16 @@ class RedGymEnv(Env):
         # check if there are any kwargs, just curious
         if len(kwargs) > 0:
             print(f"render kwargs: {kwargs}")
+        else:
+            print("render kwargs: None")
+        return self.poke_red.get_screen()
 
 
 def make_env(rank, env_conf, seed=0):
+    seed = datetime.now().microsecond if seed == 0 else seed
     def _init():
+        env_conf["rank"] = rank
+        env_conf["seed"] = seed
         env = RedGymEnv(env_conf)
         env.reset(seed=(seed + rank))
         return env
