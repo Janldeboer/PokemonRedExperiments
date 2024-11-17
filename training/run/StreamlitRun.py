@@ -9,6 +9,9 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 sys.path.append("../core")
 from RedGymEnv import make_env  # Adjust this import based on your setup
 
+if 'run_on' not in st.session_state:
+    st.session_state.run_on = False
+
 def init_streamlit():
     st.sidebar.title("Configuration")
     exponent = st.sidebar.slider('Episode Length (2^x)', min_value=0, max_value=20, value=12, step=1)
@@ -17,7 +20,8 @@ def init_streamlit():
     init_state = st.sidebar.text_input('Initial State', value='../../states/has_pokedex_nballs.state')
     gb_path = st.sidebar.text_input('GameBoy Path', value='../../PokemonRed.gb')
     model_path = st.sidebar.text_input('Model Path', value='../../first_full_run.zip')
-    return max_steps, init_state, gb_path, model_path
+    run_on = st.sidebar.checkbox('Run Model', value=False)
+    return max_steps, init_state, gb_path, model_path, run_on 
 
 def get_timestamp():
     return datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -87,5 +91,8 @@ def run_model(ep_length, init_state, gb_path, model_path):
         model.env.close()
 
 if __name__ == "__main__":
-    ep_length, init_state, gb_path, model_path = init_streamlit()
-    run_model(ep_length, init_state, gb_path, model_path)
+    ep_length, init_state, gb_path, model_path, run_on = init_streamlit()
+    if run_on:
+        run_model(ep_length, init_state, gb_path, model_path)
+
+

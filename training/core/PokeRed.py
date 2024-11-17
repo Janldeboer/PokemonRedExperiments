@@ -1,4 +1,5 @@
 import json
+import numpy as np
 
 from pyboy import PyBoy
 from pyboy.utils import WindowEvent
@@ -45,10 +46,7 @@ class PokeRed:
         
         self.pyboy = PyBoy(
             gb_path,
-            debugging=False,
-            disable_input=False,
-            window_type=head,
-            hide_window=hide_window,
+            window = "null" if hide_window else "SDL2",  # Use "null" for headless mode
         )
 
         self.action_freq = 24
@@ -92,7 +90,7 @@ class PokeRed:
         return self.read_multi_byte(stat_address, stat_length)
 
     def get_screen(self):
-        return self.pyboy.botsupport_manager().screen().screen_ndarray()
+        return np.array(self.pyboy.screen)
 
     def get_poke_info(self, info, info_index=0, opponent=False):
         if info not in self.STATS:
@@ -165,7 +163,7 @@ class PokeRed:
     # Memory reading wrappers
 
     def read_m(self, addr):
-        return self.pyboy.get_memory_value(addr)
+        return self.pyboy.memory[addr]
 
     def read_multi_byte(self, start_addr, length):
         return sum(self.read_m(start_addr + i) * 256**i for i in range(length))
@@ -178,6 +176,6 @@ def poke_red_demo(gb_path, state_path):
 
 
 if __name__ == "__main__":
-    poke_red_demo("../PokemonRed.gb", "../has_pokedex_nballs.state")
+    poke_red_demo("../PokemonRed.gb", "../../states/has_pokedex_nballs.state")
 
 __all__ = ["PokeRed"]

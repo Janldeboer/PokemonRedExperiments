@@ -67,7 +67,7 @@ if __name__ == "__main__":
         )
 
     # keyboard.on_press_key("M", toggle_agent)
-    obs, info = env.reset()
+    obs = env.reset()
     while True:
         action = 7  # pass action
         try:
@@ -77,8 +77,8 @@ if __name__ == "__main__":
             agent_enabled = False
         if agent_enabled:
             action, _states = model.predict(obs, deterministic=False)
-        obs, rewards, terminated, truncated, info = env.step(action)
+        obs, rewards, terminated, info = env.step(action)
         env.render()
-        if truncated:
+        if terminated:
             break
     env.close()

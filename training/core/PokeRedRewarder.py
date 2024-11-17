@@ -36,8 +36,14 @@ class PokeRedRewarder:
         rewards["total"] = sum([val for _, val in rewards.items()])
         return rewards
 
-    def add_to_knn(self, frame_vec):
-        scaled = (255 * resize(frame_vec, (36,40), anti_aliasing=True)).astype(np.uint8)
+    def add_to_knn(self, frame):
+        # Convert the Screen object to a numpy array
+        frame_array = np.array(frame)
+        
+        # Reshape the array if necessary (adjust dimensions as needed)
+        frame_vec = frame_array.reshape(-1, frame_array.shape[-1])
+        
+        scaled = (255 * resize(frame_vec, (36, 40), anti_aliasing=True)).astype(np.uint8)
         scaled = scaled[:, :, :1]
         if not self.knn_handler:
             #print("Creating new knn handler")
